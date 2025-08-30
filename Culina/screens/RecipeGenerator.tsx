@@ -34,57 +34,76 @@ const RecipeGenerator = ({ navigation }: Props) => {
   const [dietaryPreference, setDietaryPreference] = useState("");
   const [cuisineType, setCuisineType] = useState("");
   const [loading, setLoading] = useState(false);
-  const [generatedRecipe, setGeneratedRecipe] = useState<Recipe | null>(null);
+  const [generatedRecipes, setGeneratedRecipes] = useState<Recipe[]>([]);
 
-  const generateRecipe = async () => {
+  const generateRecipes = async () => {
     if (!ingredients.trim()) {
       Alert.alert("Error", "Please enter at least some ingredients");
       return;
     }
 
     setLoading(true);
-    setGeneratedRecipe(null);
+    setGeneratedRecipes([]);
 
     try {
       const genAI = new GoogleGenerativeAI.GoogleGenerativeAI(API_KEY);
       const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
       const prompt = `
-        Generate a detailed recipe based on the following:
+        Generate 5 different and diverse recipes based on the following ingredients and preferences.
+        Each recipe should be unique and use different combinations of the provided ingredients.
+        
         Ingredients: ${ingredients}
         ${dietaryPreference ? `Dietary Preference: ${dietaryPreference}` : ""}
         ${cuisineType ? `Cuisine Type: ${cuisineType}` : ""}
         
-        Please provide the recipe in the following JSON format:
-        {
-          "title": "Recipe Title",
-          "ingredients": ["ingredient 1", "ingredient 2", ...],
-          "instructions": ["step 1", "step 2", ...],
-          "cookingTime": "XX minutes",
-          "difficulty": "Easy/Medium/Hard",
-          "servings": X
-        }
+        Please provide the recipes in the following JSON array format:
+        [
+          {
+            "title": "Recipe Title 1",
+            "ingredients": ["ingredient 1", "ingredient 2", ...],
+            "instructions": ["Step 1: Detailed instruction here", "Step 2: Next instruction here", ...],
+            "cookingTime": "XX minutes",
+            "difficulty": "Easy/Medium/Hard",
+            "servings": X
+          },
+          {
+            "title": "Recipe Title 2",
+            "ingredients": ["ingredient 1", "ingredient 2", ...],
+            "instructions": ["Step 1: Detailed instruction here", "Step 2: Next instruction here", ...],
+            "cookingTime": "XX minutes",
+            "difficulty": "Easy/Medium/Hard",
+            "servings": X
+          },
+          ... (at least 5 recipes)
+        ]
         
-        Make sure the recipe is creative, practical, and uses the provided ingredients effectively.
+        IMPORTANT FORMATTING RULES:
+        1. Each instruction step should be a clear, numbered step starting with "Step X: "
+        2. Instructions should be concise but detailed enough to follow
+        3. Each step should be a separate array item
+        4. Do not combine multiple steps into one instruction
+        5. Make sure the recipes are creative, practical, and use the provided ingredients effectively
+        6. Each recipe should be distinct and offer variety in cooking style, cuisine influence, or preparation method
       `;
 
       const result = await model.generateContent(prompt);
       const response = result.response;
       const text = response.text();
 
-      // Extract JSON from the response
-      const jsonMatch = text.match(/\{[\s\S]*\}/);
+      // Extract JSON array from the response
+      const jsonMatch = text.match(/\[[\s\S]*\]/);
       if (jsonMatch) {
-        const recipeData = JSON.parse(jsonMatch[0]);
-        setGeneratedRecipe(recipeData);
+        const recipesData = JSON.parse(jsonMatch[0]);
+        setGeneratedRecipes(recipesData);
       } else {
         throw new Error("Could not parse recipe data");
       }
     } catch (error: any) {
-      console.error("Error generating recipe:", error);
+      console.error("Error generating recipes:", error);
       Alert.alert(
         "Error",
-        "Failed to generate recipe. Please try again with different ingredients."
+        "Failed to generate recipes. Please try again with different ingredients."
       );
     } finally {
       setLoading(false);
@@ -95,7 +114,7 @@ const RecipeGenerator = ({ navigation }: Props) => {
     setIngredients("");
     setDietaryPreference("");
     setCuisineType("");
-    setGeneratedRecipe(null);
+    setGeneratedRecipes([]);
   };
 
   return (
@@ -142,13 +161,13 @@ const RecipeGenerator = ({ navigation }: Props) => {
             <View style={styles.buttonContainer}>
               <TouchableOpacity
                 style={[styles.button, styles.generateButton]}
-                onPress={generateRecipe}
+                onPress={generateRecipes}
                 disabled={loading || !ingredients.trim()}
               >
                 {loading ? (
                   <ActivityIndicator color="white" />
                 ) : (
-                  <Text style={styles.buttonText}>Generate Recipe</Text>
+                  <Text style={styles.buttonText}>Generate Recipes</Text>
                 )}
               </TouchableOpacity>
 
@@ -161,40 +180,45 @@ const RecipeGenerator = ({ navigation }: Props) => {
             </View>
           </View>
 
-          {generatedRecipe && (
-            <View style={styles.recipeContainer}>
-              <Text style={styles.recipeTitle}>{generatedRecipe.title}</Text>
-              
-              <View style={styles.recipeMeta}>
-                <Text style={styles.metaText}>
-                  ⏱️ {generatedRecipe.cookingTime}
-                </Text>
-                <Text style={styles.metaText}>
-                  🎯 {generatedRecipe.difficulty}
-                </Text>
-                <Text style={styles.metaText}>
-                  👥 Serves {generatedRecipe.servings}
-                </Text>
-              </View>
-
-              <Text style={styles.sectionTitle}>Ingredients</Text>
-              <View style={styles.ingredientsList}>
-                {generatedRecipe.ingredients.map((ingredient, index) => (
-                  <Text key={index} style={styles.ingredientItem}>
-                    • {ingredient}
-                  </Text>
-                ))}
-              </View>
-
-              <Text style={styles.sectionTitle}>Instructions</Text>
-              <View style={styles.instructionsList}>
-                {generatedRecipe.instructions.map((instruction, index) => (
-                  <View key={index} style={styles.instructionStep}>
-                    <Text style={styles.stepNumber}>{index + 1}.</Text>
-                    <Text style={styles.instructionText}>{instruction}</Text>
+          {generatedRecipes.length > 0 && (
+            <View style={styles.recipesContainer}>
+              <Text style={styles.recipesHeader}>Suggested Recipes ({generatedRecipes.length})</Text>
+              {generatedRecipes.map((recipe, recipeIndex) => (
+                <View key={recipeIndex} style={styles.recipeContainer}>
+                  <Text style={styles.recipeTitle}>{recipe.title}</Text>
+                  
+                  <View style={styles.recipeMeta}>
+                    <Text style={styles.metaText}>
+                      ⏱️ {recipe.cookingTime}
+                    </Text>
+                    <Text style={styles.metaText}>
+                      🎯 {recipe.difficulty}
+                    </Text>
+                    <Text style={styles.metaText}>
+                      👥 Serves {recipe.servings}
+                    </Text>
                   </View>
-                ))}
-              </View>
+
+                  <Text style={styles.sectionTitle}>Ingredients</Text>
+                  <View style={styles.ingredientsList}>
+                    {recipe.ingredients.map((ingredient: string, index: number) => (
+                      <Text key={index} style={styles.ingredientItem}>
+                        • {ingredient}
+                      </Text>
+                    ))}
+                  </View>
+
+                  <Text style={styles.sectionTitle}>Instructions</Text>
+                  <View style={styles.instructionsList}>
+                    {recipe.instructions.map((instruction: string, index: number) => (
+                      <View key={index} style={styles.instructionStep}>
+                        <Text style={styles.stepNumber}>{index + 1}.</Text>
+                        <Text style={styles.instructionText}>{instruction}</Text>
+                      </View>
+                    ))}
+                  </View>
+                </View>
+              ))}
             </View>
           )}
         </ScrollView>
@@ -288,6 +312,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
+    marginBottom: 20,
   },
   recipeTitle: {
     fontSize: 24,
@@ -345,6 +370,16 @@ const styles = StyleSheet.create({
     color: "#444",
     lineHeight: 22,
     flex: 1,
+  },
+  recipesContainer: {
+    marginTop: 20,
+  },
+  recipesHeader: {
+    fontSize: 22,
+    fontWeight: "bold",
+    color: "#333",
+    marginBottom: 16,
+    textAlign: "center",
   },
 });
 

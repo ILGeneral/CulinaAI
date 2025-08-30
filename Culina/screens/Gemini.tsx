@@ -32,7 +32,7 @@ const GeminiChat = () => {
       try {
         const genAI = new GoogleGenerativeAI.GoogleGenerativeAI(API_KEY);
         const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-        const prompt = "Hello! I'm Culina, your AI kitchen assistant. How can I help you today? I can suggest recipes, help with meal planning, or answer cooking questions.";
+        const prompt = "Introduce yourself as Culina, an AI kitchen assistant. Greet the user warmly and explain that you can help with recipes, meal planning, and cooking questions. Keep it friendly and welcoming.";
         const result = await model.generateContent(prompt);
         const response = result.response;
         const text = response.text();
@@ -46,6 +46,14 @@ const GeminiChat = () => {
         ]);
       } catch (error) {
         console.error("Error initializing chat:", error);
+        // If there's an error, set a default greeting message
+        setMessages([
+          {
+            text: "Hello! I'm Culina, your AI kitchen assistant. How can I help you today? I can suggest recipes, help with meal planning, or answer cooking questions.",
+            user: false,
+            id: Date.now().toString(),
+          },
+        ]);
         Alert.alert("Error", "Failed to initialize chat. Please check your internet connection.");
       }
     };
