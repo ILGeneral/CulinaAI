@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -15,6 +15,9 @@ import {
 import * as GoogleGenerativeAI from "@google/generative-ai";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "../App";
+import { auth } from "../firebaseConfig";
+import { saveRecipe } from "../utils/firestore";
+import { User } from "firebase/auth";
 
 type Props = NativeStackScreenProps<RootStackParamList, "RecipeGenerator">;
 
@@ -35,6 +38,14 @@ const RecipeGenerator = ({ navigation }: Props) => {
   const [cuisineType, setCuisineType] = useState("");
   const [loading, setLoading] = useState(false);
   const [generatedRecipes, setGeneratedRecipes] = useState<Recipe[]>([]);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+
+  useEffect(() => {
+    const unsubscribe = auth.onAuthStateChanged((user) => {
+      setCurrentUser(user);
+    });
+    return unsubscribe;
+  }, []);
 
   const generateRecipes = async () => {
     if (!ingredients.trim()) {
@@ -115,6 +126,21 @@ const RecipeGenerator = ({ navigation }: Props) => {
     setDietaryPreference("");
     setCuisineType("");
     setGeneratedRecipes([]);
+  };
+
+  const handleSaveRecipe = async (recipe: Recipe) => {
+    if (!currentUser) {
+      Alert.alert("Error", "You must be logged in to save recipes.");
+      return;
+    }
+
+    try {
+      await saveRecipe(currentUser.uid, recipe);
+      Alert.alert("Success", "Recipe saved successfully!");
+    } catch (error: any) {
+      console.error("Error saving recipe:", error);
+      Alert.alert("Error", "Failed to save recipe. Please try again.");
+    }
   };
 
   return (
@@ -217,6 +243,13 @@ const RecipeGenerator = ({ navigation }: Props) => {
                       </View>
                     ))}
                   </View>
+
+                  <TouchableOpacity
+                    style={[styles.button, styles.saveButton]}
+                    onPress={() => handleSaveRecipe(recipe)}
+                  >
+                    <Text style={styles.buttonText}>Save Recipe</Text>
+                  </TouchableOpacity>
                 </View>
               ))}
             </View>
@@ -297,6 +330,10 @@ const styles = StyleSheet.create({
   },
   clearButton: {
     backgroundColor: "#ff3b30",
+  },
+  saveButton: {
+    backgroundColor: "#4CAF50",
+    marginTop: 16,
   },
   buttonText: {
     color: "white",

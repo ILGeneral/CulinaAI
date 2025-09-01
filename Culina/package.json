@@ -11,6 +11,7 @@
     "web": "expo start --web"
   },
   "dependencies": {
+    "@expo/metro-runtime": "~5.0.4",
     "@expo/vector-icons": "^14.1.0",
     "@google/generative-ai": "^0.24.1",
     "@react-native-async-storage/async-storage": "^2.1.2",
@@ -21,17 +22,16 @@
     "expo-linear-gradient": "~14.1.5",
     "expo-speech": "^13.1.7",
     "expo-status-bar": "~2.2.3",
-    "firebase": "^12.1.0",
+    "firebase": "^12.2.1",
     "nativewind": "latest",
     "react": "19.0.0",
+    "react-dom": "19.0.0",
     "react-native": "0.79.5",
     "react-native-flash-message": "^0.4.2",
     "react-native-reanimated": "~3.17.4",
     "react-native-safe-area-context": "5.4.0",
     "react-native-swiper": "^1.6.0",
-    "react-dom": "19.0.0",
-    "react-native-web": "^0.20.0",
-    "@expo/metro-runtime": "~5.0.4"
+    "react-native-web": "^0.20.0"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0",

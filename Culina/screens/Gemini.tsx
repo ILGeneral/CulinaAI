@@ -32,7 +32,7 @@ const GeminiChat = () => {
       try {
         const genAI = new GoogleGenerativeAI.GoogleGenerativeAI(API_KEY);
         const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-        const prompt = "Introduce yourself as Culina, an AI kitchen assistant. Greet the user warmly and explain that you can help with recipes, meal planning, and cooking questions. Keep it friendly and welcoming.";
+        const prompt = "Introduce yourself as Culina (that is your name), an AI kitchen assistant. Greet the user warmly and explain that you can help with recipes, meal planning, and cooking questions. Keep it friendly and welcoming.";
         const result = await model.generateContent(prompt);
         const response = result.response;
         const text = response.text();

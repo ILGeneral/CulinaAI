@@ -14,6 +14,7 @@ import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { auth, db } from '../firebaseConfig';
+import CustomCheckBox from '../components/customCheckBox';
 import type { RootStackParamList } from '../App';
 
 const dietaryOptions = [
