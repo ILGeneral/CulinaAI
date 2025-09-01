@@ -10,7 +10,7 @@ import OnboardingScreen from './screens/onboarding';
 import SettingsScreen from './screens/Settings';
 import RecipeGenerator from './screens/RecipeGenerator';
 import { StatusBar } from 'expo-status-bar';
-import { auth } from './firebaseConfig';
+import { auth } from './utils/authPersistence';
 import { checkOnboardingStatus } from './utils/storage';
 
 import './global.css';

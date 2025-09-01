@@ -18,7 +18,7 @@ import { signInWithEmailAndPassword } from 'firebase/auth';
 
 import Background from '../components/background';
 import CustomCheckBox from '../components/customCheckBox';
-import { auth } from '../firebaseConfig';
+import { auth } from '../utils/authPersistence';
 import type { RootStackParamList } from '../App';
 
 type LoginScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Login'>;

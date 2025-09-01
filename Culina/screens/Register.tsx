@@ -10,6 +10,7 @@ import {
   Linking,
   Platform,
   KeyboardAvoidingView,
+  Alert,
 } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import { useNavigation } from '@react-navigation/native';
@@ -83,11 +84,17 @@ const Register = () => {
     if (currentStep === 1) {
       // Validate basic info
       if (!email || !username || !password || !confirmPassword) {
-        alert('Please fill in all fields.');
+        Alert.alert('Validation Error', 'Please fill in all fields.');
         return;
       }
+      
+      if (password.length < 6) {
+        Alert.alert('Validation Error', 'Password must be at least 6 characters long.');
+        return;
+      }
+      
       if (password !== confirmPassword) {
-        alert('Passwords do not match.');
+        Alert.alert('Validation Error', 'Passwords do not match.');
         return;
       }
       
@@ -104,29 +111,87 @@ const Register = () => {
 
   const handleCreateAccount = async () => {
     if (!agreeTerms) {
-      alert('You must agree to the Terms of Service and Privacy Policy.');
+      Alert.alert('Terms Required', 'You must agree to the Terms of Service and Privacy Policy.');
       return;
     }
 
+    console.log('🚀 Starting account creation process...');
+    console.log('📧 Email:', email);
+    console.log('👤 Username:', username);
+    console.log('🍎 Dietary Lifestyle:', dietaryLifestyle || 'Not specified');
+    console.log('🚫 Allergies:', allergies.length > 0 ? allergies : ['None specified']);
+    console.log('🕌 Religious Practice:', religiousPractice || 'Not specified');
+    console.log('🎯 Calorie Goal:', calorieGoal || 'Not specified');
+
     try {
-      // Create user with email and password
+      // Step 1: Create Firebase Auth user
+      console.log('🔐 Creating Firebase Auth user...');
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
+      
+      console.log('✅ Firebase Auth user created successfully!');
+      console.log('🆔 User UID:', user.uid);
+      console.log('📧 User Email:', user.email);
 
-      // Create user document with all information
-      await setDoc(doc(db, 'users', user.uid), {
+      // Step 2: Prepare user data for Firestore
+      const userData = {
         email: user.email,
         username: username,
-        dietaryLifestyle,
-        allergies,
-        religiousPractice,
-        calorieGoal,
-      });
+        dietaryLifestyle: dietaryLifestyle || 'None',
+        allergies: allergies.length > 0 ? allergies : ['None'],
+        religiousPractice: religiousPractice || 'None',
+        calorieGoal: calorieGoal || 'None',
+        createdAt: new Date().toISOString(),
+        uid: user.uid,
+      };
 
-      // Navigate to onboarding
-      navigation.navigate('Onboarding');
+      console.log('📋 User data to be saved:', userData);
+
+      // Step 3: Create Firestore document
+      console.log('💾 Saving user data to Firestore...');
+      const userDocRef = doc(db, 'users', user.uid);
+      
+      await setDoc(userDocRef, userData);
+      
+      console.log('✅ User data saved to Firestore successfully!');
+      console.log('📄 Document path: users/' + user.uid);
+
+      // Step 4: Success feedback
+      Alert.alert(
+        'Account Created!', 
+        `Welcome ${username}! Your account has been created successfully.`,
+        [
+          {
+            text: 'Continue',
+            onPress: () => {
+              console.log('🎉 Navigating to Onboarding...');
+              navigation.navigate('Onboarding');
+            }
+          }
+        ]
+      );
+
     } catch (error: any) {
-      alert(error.message);
+      console.error('❌ Account creation failed:', error);
+      console.error('❌ Error code:', error.code);
+      console.error('❌ Error message:', error.message);
+      
+      // More specific error handling
+      let errorMessage = 'An unexpected error occurred. Please try again.';
+      
+      if (error.code === 'auth/email-already-in-use') {
+        errorMessage = 'This email address is already registered. Please use a different email or try logging in.';
+      } else if (error.code === 'auth/invalid-email') {
+        errorMessage = 'Please enter a valid email address.';
+      } else if (error.code === 'auth/weak-password') {
+        errorMessage = 'Password is too weak. Please choose a stronger password.';
+      } else if (error.code === 'auth/network-request-failed') {
+        errorMessage = 'Network error. Please check your internet connection and try again.';
+      } else if (error.message.includes('firestore') || error.message.includes('Firestore')) {
+        errorMessage = 'Account was created but there was an issue saving your preferences. Please contact support.';
+      }
+      
+      Alert.alert('Registration Failed', errorMessage);
     }
   };
 
@@ -158,7 +223,7 @@ const Register = () => {
       <Text style={styles.label}>Password</Text>
       <TextInput
         style={styles.input}
-        placeholder="Enter your password"
+        placeholder="Enter your password (min 6 characters)"
         secureTextEntry
         value={password}
         onChangeText={setPassword}

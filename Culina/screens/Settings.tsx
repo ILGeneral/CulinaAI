@@ -13,7 +13,8 @@ import { Picker } from '@react-native-picker/picker';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { auth, db } from '../firebaseConfig';
+import { auth } from '../utils/authPersistence';
+import { db } from '../firebaseConfig';
 import CustomCheckBox from '../components/customCheckBox';
 import type { RootStackParamList } from '../App';
 

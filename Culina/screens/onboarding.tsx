@@ -3,7 +3,7 @@ import { StyleSheet, View, Text, Image, TouchableOpacity, Dimensions } from 'rea
 import Swiper from 'react-native-swiper';
 import Background from '../components/background';
 import { markOnboardingComplete } from '../utils/storage';
-import { auth } from '../firebaseConfig';
+import { auth } from '../utils/authPersistence';
 
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../App'; 

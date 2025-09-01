@@ -15,7 +15,7 @@ import {
 import * as GoogleGenerativeAI from "@google/generative-ai";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "../App";
-import { auth } from "../firebaseConfig";
+import { auth } from "../utils/authPersistence";
 import { saveRecipe } from "../utils/firestore";
 import { User } from "firebase/auth";
 
