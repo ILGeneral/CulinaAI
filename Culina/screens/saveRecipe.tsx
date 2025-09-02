@@ -16,7 +16,7 @@ import CustomBottomBar from "../components/customBottomBar";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "../App";
 
-type Props = NativeStackScreenProps<RootStackParamList, "IngredientsList">;
+type Props = NativeStackScreenProps<RootStackParamList, "SaveRecipe">;
 
 interface Recipe {
   id: string;
