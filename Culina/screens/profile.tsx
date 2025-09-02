@@ -64,20 +64,31 @@ export default function Profile({ navigation }: Props) {
         </TouchableOpacity>
 
         {/* Sign Out */}
-        <TouchableOpacity style={styles.signOut} onPress={handleLogout}>
-          <Image source={require('../assets/logout.png')} style={styles.signOutIcon} />
-          <Text style={styles.signOutText}>Sign Out</Text>
-        </TouchableOpacity>
+        <View style={styles.footer}>
+          <TouchableOpacity style={styles.signOut} onPress={handleLogout}>
+            <View style={styles.signOutLeft}>
+              <Image source={require('../assets/logout.png')} style={styles.signOutIcon} />
+              <Text style={styles.signOutText}>Sign Out</Text>
+            </View>
+            <Image source={require('../assets/signoutculina.png')} style={styles.chibiIcon} />
+          </TouchableOpacity>
+        </View>
       </ScrollView>
     </Background>
   );
 }
 
 const styles = StyleSheet.create({
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 16, paddingTop: 25 },
+  header: { 
+    flexDirection: 'row', 
+    justifyContent: 'space-between', 
+    alignItems: 'center', 
+    padding: 16, 
+    paddingTop: 25 
+  },
   backIcon: { width: 45, height: 45 },
   headerTitle: { fontSize: 20, fontWeight: 'bold' },
-  content: { paddingHorizontal: 16, paddingBottom: 32 },
+  content: { flexGrow: 1, paddingHorizontal: 16, paddingBottom: 32 },
   profilePicWrapper: { alignItems: 'center', marginVertical: 24 },
   profilePic: { width: 80, height: 80, borderRadius: 40, marginBottom: 8, backgroundColor: '#e5e7eb' },
   profileName: { fontSize: 18, fontWeight: '600' },
@@ -87,15 +98,37 @@ const styles = StyleSheet.create({
   rowIcon: { width: 24, height: 24, marginRight: 12, resizeMode: 'contain' },
   rowText: { fontSize: 16, fontWeight: '500' },
   rowSubText: { fontSize: 14, color: '#6b7280' },
+
+  footer: {
+    marginTop: 'auto',
+    marginBottom: 20,
+  },
+
   signOut: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 32,
-    paddingVertical: 14,
-    borderRadius: 12,
-    backgroundColor: '#f3f4f6',
+    justifyContent: 'space-between', 
+    paddingHorizontal: 8,
   },
-  signOutIcon: { width: 20, height: 20, marginRight: 8 },
-  signOutText: { fontSize: 16, fontWeight: '600', color: '#374151' },
+  signOutLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  signOutIcon: {
+    top:4,
+    width: 70,
+    height: 70,
+    marginRight: 8,
+    resizeMode: 'contain',
+  },
+  signOutText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#111827',
+  },
+  chibiIcon: {
+    width: 70,
+    height: 70,
+    resizeMode: 'contain',
+  },
 });
