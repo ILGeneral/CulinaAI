@@ -1,18 +1,32 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
 import { RootStackParamList } from '../App';
+import { getUserData } from '../utils/firestore';
+import { auth } from '../utils/authPersistence';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Home'>;
 
-export default function HomeScreen({ route, navigation }: Props) {
-  const { userEmail } = route.params;
+export default function HomeScreen({ navigation }: Props) {
+  const [username, setUsername] = useState('User');
+
+  useEffect(() => {
+    const fetchUsername = async () => {
+      if (auth.currentUser) {
+        const userData = await getUserData(auth.currentUser.uid);
+        if (userData) {
+          setUsername(userData.username);
+        }
+      }
+    };
+    fetchUsername();
+  }, []);
 
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
-        <Text style={styles.title}>Welcome {userEmail || 'User'}!</Text>
+        <Text style={styles.title}>Welcome {username || 'User'}!</Text>
         <Text style={styles.subtitle}>What would you like to do today?</Text>
         
         <View style={styles.buttonContainer}>

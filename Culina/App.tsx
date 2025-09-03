@@ -18,7 +18,7 @@ import './global.css';
 export type RootStackParamList = {
   Login: undefined;
   Register: undefined;
-  Home: { userEmail: string };
+  Home: undefined;
   Gemini: undefined;
   Onboarding: undefined;
   Settings: undefined;
@@ -66,7 +66,6 @@ export default function App() {
         <Stack.Screen 
           name="Home" 
           component={HomeScreen}
-          initialParams={{ userEmail: user?.email || '' }}
         />
         <Stack.Screen name="Gemini" component={GeminiChat} />
         <Stack.Screen name="Onboarding" component={OnboardingScreen} />

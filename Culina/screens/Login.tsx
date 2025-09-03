@@ -32,7 +32,7 @@ const Login = () => {
   const handleLogin = async () => {
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      navigation.navigate('Home', { userEmail: email });
+      navigation.navigate('Home');
     } catch (error: any) {
       Alert.alert('Login Failed', error.message);
     }

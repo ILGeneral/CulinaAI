@@ -49,7 +49,7 @@ const GeminiChat = () => {
         // If there's an error, set a default greeting message
         setMessages([
           {
-            text: "Hello! I'm Culina, your AI kitchen assistant. How can I help you today? I can suggest recipes, help with meal planning, or answer cooking questions.",
+            text: "There seems to be an issue connecting to the AI service. Please check your internet connection and try again! - Culina",
             user: false,
             id: Date.now().toString(),
           },

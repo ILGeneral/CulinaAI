@@ -45,7 +45,7 @@ const Onboarding = ({ navigation }: Props) => {
     if (user) {
       await markOnboardingComplete(user.uid);
     }
-    navigation.navigate('Home', { userEmail: user?.email || '' });
+    navigation.navigate('Home');
   };
 
   return (
