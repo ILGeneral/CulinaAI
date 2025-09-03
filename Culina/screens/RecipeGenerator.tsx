@@ -11,6 +11,7 @@ import {
   SafeAreaView,
   KeyboardAvoidingView,
   Platform,
+  Image,
 } from "react-native";
 import * as GoogleGenerativeAI from "@google/generative-ai";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
@@ -18,6 +19,8 @@ import type { RootStackParamList } from "../App";
 import { auth } from "../utils/authPersistence";
 import { saveRecipe } from "../utils/firestore";
 import { User } from "firebase/auth";
+import Background from "../components/background";
+import CustomBottomBar from "../components/customBottomBar";
 
 type Props = NativeStackScreenProps<RootStackParamList, "RecipeGenerator">;
 
@@ -78,31 +81,13 @@ const RecipeGenerator = ({ navigation }: Props) => {
             "difficulty": "Easy/Medium/Hard",
             "servings": X
           },
-          {
-            "title": "Recipe Title 2",
-            "ingredients": ["ingredient 1", "ingredient 2", ...],
-            "instructions": ["Step 1: Detailed instruction here", "Step 2: Next instruction here", ...],
-            "cookingTime": "XX minutes",
-            "difficulty": "Easy/Medium/Hard",
-            "servings": X
-          },
-          ... (at least 5 recipes)
+          ...
         ]
-        
-        IMPORTANT FORMATTING RULES:
-        1. Each instruction step should be a clear, numbered step starting with "Step X: "
-        2. Instructions should be concise but detailed enough to follow
-        3. Each step should be a separate array item
-        4. Do not combine multiple steps into one instruction
-        5. Make sure the recipes are creative, practical, and use the provided ingredients effectively
-        6. Each recipe should be distinct and offer variety in cooking style, cuisine influence, or preparation method
       `;
 
       const result = await model.generateContent(prompt);
       const response = result.response;
       const text = response.text();
-
-      // Extract JSON array from the response
       const jsonMatch = text.match(/\[[\s\S]*\]/);
       if (jsonMatch) {
         const recipesData = JSON.parse(jsonMatch[0]);
@@ -144,215 +129,233 @@ const RecipeGenerator = ({ navigation }: Props) => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        style={styles.keyboardAvoidingView}
-      >
-        <ScrollView contentContainerStyle={styles.scrollContent}>
-          <View style={styles.header}>
-            <Text style={styles.headerTitle}>Recipe Generator</Text>
-            <Text style={styles.subtitle}>
-              Generate delicious recipes based on your ingredients
-            </Text>
-          </View>
+    <Background>
+      <SafeAreaView style={{ flex: 1 }}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          style={{ flex: 1 }}
+        >
+          <ScrollView contentContainerStyle={uiStyles.container}>
+            {/* Header: CULINA and Profile aligned in a row */}
+            <View style={uiStyles.headerContainer}>
+              <Text style={uiStyles.headerTitle}>CULINA</Text>
+              <TouchableOpacity onPress={() => navigation.navigate("Profile")}>
+                <Image
+                  source={require("../assets/profile.png")}
+                  style={uiStyles.profileIcon}
+                  resizeMode="cover"
+                />
+              </TouchableOpacity>
+            </View>
 
-          <View style={styles.formContainer}>
-            <Text style={styles.label}>Ingredients (comma-separated)</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="e.g., chicken, rice, vegetables, spices"
-              value={ingredients}
-              onChangeText={setIngredients}
-              multiline
-              numberOfLines={3}
+            {/* Character Illustration */}
+            <Image
+              source={require("../assets/GenerateRecipe.png")}
+              style={uiStyles.character}
+              resizeMode="contain"
             />
 
-            <Text style={styles.label}>Dietary Preference (optional)</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="e.g., vegetarian, gluten-free, keto"
-              value={dietaryPreference}
-              onChangeText={setDietaryPreference}
-            />
+            {/* Title */}
+            <Text style={uiStyles.title}>What’s do you want to make?</Text>
 
-            <Text style={styles.label}>Cuisine Type (optional)</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="e.g., Italian, Mexican, Asian"
-              value={cuisineType}
-              onChangeText={setCuisineType}
-            />
+            {/* Input Fields */}
+            <View style={{ width: "100%", marginVertical: 12 }}>
+              <Text style={uiStyles.inputLabel}>Ingredients</Text>
+              <TextInput
+                style={uiStyles.input}
+                placeholder="e.g., chicken, rice, vegetables"
+                value={ingredients}
+                onChangeText={setIngredients}
+                multiline
+                numberOfLines={2}
+              />
 
-            <View style={styles.buttonContainer}>
+              <Text style={uiStyles.inputLabel}>Dietary Preference</Text>
+              <TextInput
+                style={uiStyles.input}
+                placeholder="e.g., vegetarian, gluten-free"
+                value={dietaryPreference}
+                onChangeText={setDietaryPreference}
+              />
+
+              <Text style={uiStyles.inputLabel}>Cuisine Type</Text>
+              <TextInput
+                style={uiStyles.input}
+                placeholder="e.g., Italian, Mexican"
+                value={cuisineType}
+                onChangeText={setCuisineType}
+              />
+            </View>
+
+            {/* Buttons */}
+            <View style={uiStyles.buttonRow}>
               <TouchableOpacity
-                style={[styles.button, styles.generateButton]}
+                style={[uiStyles.button, uiStyles.primaryButton]}
                 onPress={generateRecipes}
-                disabled={loading || !ingredients.trim()}
               >
                 {loading ? (
                   <ActivityIndicator color="white" />
                 ) : (
-                  <Text style={styles.buttonText}>Generate Recipes</Text>
+                  <>
+                    <Image source={require("../assets/generate.png")} />
+                    <Text style={uiStyles.buttonText}>Generate</Text>
+                  </>
                 )}
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={[styles.button, styles.clearButton]}
-                onPress={clearForm}
+                style={[uiStyles.button, uiStyles.secondaryButton]}
+                onPress={() => navigation.navigate("IngredientsList")}
               >
-                <Text style={styles.buttonText}>Clear</Text>
+                <Image source={require("../assets/book.png")} style={uiStyles.icon} />
+                <Text style={uiStyles.secondaryText}>Edit Ingredients</Text>
               </TouchableOpacity>
             </View>
-          </View>
 
-          {generatedRecipes.length > 0 && (
-            <View style={styles.recipesContainer}>
-              <Text style={styles.recipesHeader}>Suggested Recipes ({generatedRecipes.length})</Text>
-              {generatedRecipes.map((recipe, recipeIndex) => (
-                <View key={recipeIndex} style={styles.recipeContainer}>
-                  <Text style={styles.recipeTitle}>{recipe.title}</Text>
-                  
-                  <View style={styles.recipeMeta}>
-                    <Text style={styles.metaText}>
-                      ⏱️ {recipe.cookingTime}
-                    </Text>
-                    <Text style={styles.metaText}>
-                      🎯 {recipe.difficulty}
-                    </Text>
-                    <Text style={styles.metaText}>
-                      👥 Serves {recipe.servings}
-                    </Text>
-                  </View>
+            {/* Display generated recipes */}
+            {generatedRecipes.length > 0 && (
+              <View style={uiStyles.recipesContainer}>
+                {generatedRecipes.map((recipe, idx) => (
+                  <View key={idx} style={uiStyles.recipeContainer}>
+                    <Text style={uiStyles.recipeTitle}>{recipe.title}</Text>
 
-                  <Text style={styles.sectionTitle}>Ingredients</Text>
-                  <View style={styles.ingredientsList}>
-                    {recipe.ingredients.map((ingredient: string, index: number) => (
-                      <Text key={index} style={styles.ingredientItem}>
-                        • {ingredient}
+                    <View style={uiStyles.recipeMeta}>
+                      <Text style={uiStyles.metaText}>⏱️ {recipe.cookingTime}</Text>
+                      <Text style={uiStyles.metaText}>🎯 {recipe.difficulty}</Text>
+                      <Text style={uiStyles.metaText}>👥 Serves {recipe.servings}</Text>
+                    </View>
+
+                    <Text style={uiStyles.sectionTitle}>Ingredients</Text>
+                    {recipe.ingredients.map((item, index) => (
+                      <Text key={index} style={uiStyles.ingredientItem}>
+                        • {item}
                       </Text>
                     ))}
-                  </View>
 
-                  <Text style={styles.sectionTitle}>Instructions</Text>
-                  <View style={styles.instructionsList}>
-                    {recipe.instructions.map((instruction: string, index: number) => (
-                      <View key={index} style={styles.instructionStep}>
-                        <Text style={styles.stepNumber}>{index + 1}.</Text>
-                        <Text style={styles.instructionText}>{instruction}</Text>
+                    <Text style={uiStyles.sectionTitle}>Instructions</Text>
+                    {recipe.instructions.map((inst, index) => (
+                      <View key={index} style={uiStyles.instructionStep}>
+                        <Text style={uiStyles.stepNumber}>{index + 1}.</Text>
+                        <Text style={uiStyles.instructionText}>{inst}</Text>
                       </View>
                     ))}
-                  </View>
 
-                  <TouchableOpacity
-                    style={[styles.button, styles.saveButton]}
-                    onPress={() => handleSaveRecipe(recipe)}
-                  >
-                    <Text style={styles.buttonText}>Save Recipe</Text>
-                  </TouchableOpacity>
-                </View>
-              ))}
-            </View>
-          )}
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+                    <TouchableOpacity
+                      style={[uiStyles.button, uiStyles.saveButton]}
+                      onPress={() => handleSaveRecipe(recipe)}
+                    >
+                      <Text style={uiStyles.buttonText}>Save Recipe</Text>
+                    </TouchableOpacity>
+                  </View>
+                ))}
+              </View>
+            )}
+          </ScrollView>
+        </KeyboardAvoidingView>
+
+        <CustomBottomBar />
+      </SafeAreaView>
+    </Background>
   );
 };
 
-const styles = StyleSheet.create({
+const uiStyles = StyleSheet.create({
   container: {
-    flex: 1,
-    backgroundColor: "#f5f5f5",
-  },
-  keyboardAvoidingView: {
-    flex: 1,
-  },
-  scrollContent: {
-    padding: 16,
-    paddingBottom: 40,
-  },
-  header: {
-    marginBottom: 24,
+    flexGrow: 1,
     alignItems: "center",
+    padding: 20,
+  },
+  headerContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    width: "100%",
+    paddingTop: 20,
+    paddingHorizontal: 16,
   },
   headerTitle: {
-    fontSize: 28,
-    fontWeight: "bold",
-    color: "#333",
-    marginBottom: 8,
+    fontSize: 24,
+    fontWeight: "800",
   },
-  subtitle: {
-    fontSize: 16,
-    color: "#666",
-    textAlign: "center",
+  profileIcon: {
+    width: 45,
+    height: 45,
   },
-  formContainer: {
-    backgroundColor: "white",
-    borderRadius: 12,
-    padding: 20,
-    marginBottom: 20,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+  character: {
+    width: "70%",
+    height: 260,
+    marginTop: 10,
   },
-  label: {
+  title: {
+    fontSize: 18,
     fontWeight: "600",
-    marginBottom: 8,
-    color: "#333",
+    textAlign: "center",
+    marginVertical: 12,
+  },
+  inputLabel: {
+    fontWeight: "600",
+    marginBottom: 6,
     fontSize: 16,
   },
   input: {
     borderWidth: 1,
     borderColor: "#ddd",
     borderRadius: 8,
-    padding: 12,
-    marginBottom: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
     backgroundColor: "#f9f9f9",
+    marginBottom: 10,
     fontSize: 16,
   },
-  buttonContainer: {
+  buttonRow: {
     flexDirection: "row",
-    justifyContent: "space-between",
-    gap: 12,
+    marginTop: 10,
   },
   button: {
-    flex: 1,
-    padding: 16,
-    borderRadius: 8,
+    flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 10,
+    marginHorizontal: 6,
   },
-  generateButton: {
-    backgroundColor: "#2196F3",
+  primaryButton: {
+    backgroundColor: "#42A5F5",
   },
-  clearButton: {
-    backgroundColor: "#ff3b30",
-  },
-  saveButton: {
-    backgroundColor: "#4CAF50",
-    marginTop: 16,
+  secondaryButton: {
+    backgroundColor: "#fff",
+    borderWidth: 1,
+    borderColor: "#ddd",
   },
   buttonText: {
-    color: "white",
+    color: "#fff",
     fontWeight: "600",
-    fontSize: 16,
+    fontSize: 14,
+    marginLeft: 6,
+  },
+  secondaryText: {
+    marginLeft: 6,
+    color: "#000",
+    fontWeight: "500",
+    fontSize: 14,
+  },
+  icon: {},
+  recipesContainer: {
+    width: "100%",
+    marginTop: 20,
   },
   recipeContainer: {
     backgroundColor: "white",
     borderRadius: 12,
     padding: 20,
+    marginBottom: 20,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
-    marginBottom: 20,
   },
   recipeTitle: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: "bold",
     color: "#333",
     marginBottom: 16,
@@ -361,7 +364,7 @@ const styles = StyleSheet.create({
   recipeMeta: {
     flexDirection: "row",
     justifyContent: "space-around",
-    marginBottom: 20,
+    marginBottom: 12,
     padding: 12,
     backgroundColor: "#f8f9fa",
     borderRadius: 8,
@@ -372,14 +375,12 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
   sectionTitle: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: "bold",
     color: "#333",
     marginBottom: 12,
-    marginTop: 16,
-  },
-  ingredientsList: {
-    marginBottom: 16,
+    marginTop: 12,
+    alignSelf: "flex-start",
   },
   ingredientItem: {
     fontSize: 16,
@@ -387,12 +388,9 @@ const styles = StyleSheet.create({
     marginBottom: 6,
     lineHeight: 22,
   },
-  instructionsList: {
-    marginBottom: 16,
-  },
   instructionStep: {
     flexDirection: "row",
-    marginBottom: 12,
+    marginBottom: 8,
     alignItems: "flex-start",
   },
   stepNumber: {
@@ -408,15 +406,9 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     flex: 1,
   },
-  recipesContainer: {
-    marginTop: 20,
-  },
-  recipesHeader: {
-    fontSize: 22,
-    fontWeight: "bold",
-    color: "#333",
-    marginBottom: 16,
-    textAlign: "center",
+  saveButton: {
+    backgroundColor: "#4CAF50",
+    marginTop: 12,
   },
 });
 

@@ -1,128 +1,175 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView } from 'react-native';
-import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import React, { useEffect, useState } from "react";
+import {
+  StyleSheet,
+  View,
+  Text,
+  TextInput,
+  Image,
+  FlatList,
+  ScrollView,
+  TouchableOpacity,
+  SafeAreaView,
+} from "react-native";
 
-import { RootStackParamList } from '../App';
-import { getUserData } from '../utils/firestore';
-import { auth } from '../utils/authPersistence';
+import { NativeStackScreenProps } from "@react-navigation/native-stack";
+import { RootStackParamList } from "../App";
 
-type Props = NativeStackScreenProps<RootStackParamList, 'Home'>;
+import Background from "../components/background";
+import CustomBottomBar from "../components/customBottomBar";
+import RecipeCard from "components/recipeCard";
+import { fetchRecipes } from "components/backendDapat2";
 
-export default function HomeScreen({ navigation }: Props) {
-  const [username, setUsername] = useState('User');
+type Props = NativeStackScreenProps<RootStackParamList, "Home">;
+
+const Home = ({ navigation }: Props) => {
+  const [recipes, setRecipes] = useState<any>(null);
 
   useEffect(() => {
-    const fetchUsername = async () => {
-      if (auth.currentUser) {
-        const userData = await getUserData(auth.currentUser.uid);
-        if (userData) {
-          setUsername(userData.username);
-        }
-      }
-    };
-    fetchUsername();
+    fetchRecipes().then(setRecipes);
   }, []);
 
+  if (!recipes) {
+    return (
+      <Background>
+        <Text style={{ marginTop: 50, textAlign: "center" }}>Loading...</Text>
+      </Background>
+    );
+  }
+
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.content}>
-        <Text style={styles.title}>Welcome {username || 'User'}!</Text>
-        <Text style={styles.subtitle}>What would you like to do today?</Text>
-        
-        <View style={styles.buttonContainer}>
-          <TouchableOpacity 
-            style={styles.button}
-            onPress={() => navigation.navigate('Gemini')}
-            accessibilityLabel="Chat with Culina AI assistant"
-            accessibilityHint="Opens the AI chat interface for cooking assistance"
-          >
-            <Text style={styles.buttonText}>Chat with Culina!</Text>
-          </TouchableOpacity>
+    <SafeAreaView style={{ flex: 1 }}>
+      <Background>
+        <ScrollView
+          contentContainerStyle={styles.container}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Header */}
+          <View style={styles.header}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.title}>CULINA</Text>
+              <Text style={styles.subtitle}>What’s on your fridge today?</Text>
+            </View>
 
-          <TouchableOpacity 
-            style={styles.button}
-            onPress={() => navigation.navigate('RecipeGenerator')}
-            accessibilityLabel="Generate recipes"
-            accessibilityHint="Opens recipe generator based on your ingredients"
-          >
-            <Text style={styles.buttonText}>Generate Recipes</Text>
-          </TouchableOpacity>
+            {/* Clickable Profile Avatar */}
+            <TouchableOpacity onPress={() => navigation.navigate("Profile")}>
+              <Image
+                source={require("../assets/profile.png")}
+                style={styles.avatar}
+                resizeMode="cover"
+              />
+            </TouchableOpacity>
+          </View>
 
-          <TouchableOpacity 
-            style={styles.button}
-            onPress={() => navigation.navigate('Settings')}
-            accessibilityLabel="Open settings"
-            accessibilityHint="Opens app settings and preferences"
-          >
-            <Text style={styles.buttonText}>Settings</Text>
-          </TouchableOpacity>
+          {/* Chef Illustration */}
+          <Image
+            source={require("../assets/homepage.png")}
+            style={styles.chef}
+            resizeMode="contain"
+          />
 
-          <TouchableOpacity 
-            style={[styles.button, styles.logoutButton]}
-            onPress={() => navigation.replace('Login')}
-            accessibilityLabel="Logout"
-            accessibilityHint="Signs out of your account"
-          >
-            <Text style={[styles.buttonText, styles.logoutButtonText]}>Logout</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
+          {/* Search bar */}
+          <View style={styles.searchBar}>
+            <TextInput
+              placeholder="Type the ingredients you have at home"
+              placeholderTextColor="#888"
+              style={{ flex: 1, fontSize: 14 }}
+            />
+            <Image source={require("../assets/camera.png")} style={styles.icon} />
+          </View>
+
+          {/* Recently Generated Recipes */}
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Recently Generated Recipe</Text>
+              <Text style={styles.seeAll}>See All</Text>
+            </View>
+            <FlatList
+              data={recipes.recentlyGenerated}
+              horizontal
+              keyExtractor={(item) => item.id}
+              renderItem={({ item }) => <RecipeCard recipe={item} />}
+              showsHorizontalScrollIndicator={false}
+            />
+          </View>
+
+          {/* Community Shared Recipes */}
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Top Community-Shared Recipes</Text>
+              <Text style={styles.seeAll}>See All</Text>
+            </View>
+            <FlatList
+              data={recipes.communityShared}
+              horizontal
+              keyExtractor={(item) => item.id}
+              renderItem={({ item }) => <RecipeCard recipe={item} />}
+              showsHorizontalScrollIndicator={false}
+            />
+          </View>
+        </ScrollView>
+
+        {/* Floating Bottom Bar */}
+        <CustomBottomBar />
+      </Background>
     </SafeAreaView>
   );
-}
+};
 
 const styles = StyleSheet.create({
-  container: { 
-    flex: 1, 
-    backgroundColor: '#f8fafc',
+  container: {
+    padding: 16,
+    paddingBottom: 100,
   },
-  content: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  title: { 
-    fontSize: 28, 
-    fontWeight: 'bold', 
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
     marginBottom: 8,
-    color: '#1f2937',
-    textAlign: 'center',
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: "800",
+    textTransform: "uppercase",
+    letterSpacing: 1,
   },
   subtitle: {
-    fontSize: 16,
-    color: '#6b7280',
-    marginBottom: 32,
-    textAlign: 'center',
+    fontSize: 18,
+    fontWeight: "400",
+    color: "#666",
+    marginTop: 2,
   },
-  buttonContainer: {
-    width: '100%',
-    maxWidth: 300,
-    gap: 16,
+  avatar: {
+    width: 45,
+    height: 45,
   },
-  button: {
-    backgroundColor: '#3b82f6',
-    paddingVertical: 16,
-    paddingHorizontal: 24,
-    borderRadius: 12,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+  chef: {
+    width: "100%",
+    height: 220,
+    alignSelf: "center",
+    marginBottom: 16,
+  },
+  searchBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#fff",
+    borderRadius: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginVertical: 12,
+    shadowColor: "#000",
+    shadowOpacity: 0.05,
     shadowRadius: 4,
-    elevation: 3,
+    elevation: 2,
   },
-  logoutButton: {
-    backgroundColor: '#f3f4f6',
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
+  icon: { width: 24, height: 24 },
+  section: { marginTop: 20 },
+  sectionHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 8,
   },
-  buttonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  logoutButtonText: {
-    color: '#374151',
-  },
+  sectionTitle: { fontSize: 16, fontWeight: "700" },
+  seeAll: { fontSize: 14, color: "#42A5F5", fontWeight: "600" },
 });
+
+export default Home;

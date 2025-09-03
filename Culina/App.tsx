@@ -9,6 +9,11 @@ import GeminiChat from './screens/Gemini';
 import OnboardingScreen from './screens/onboarding';
 import SettingsScreen from './screens/Settings';
 import RecipeGenerator from './screens/RecipeGenerator';
+import IngredientsList from 'screens/ingredientsList';
+import SaveRecipe from 'screens/saveRecipe';
+import Profile from 'screens/profile';
+
+
 import { StatusBar } from 'expo-status-bar';
 import { auth } from './utils/authPersistence';
 import { checkOnboardingStatus } from './utils/storage';
@@ -23,6 +28,9 @@ export type RootStackParamList = {
   Onboarding: undefined;
   Settings: undefined;
   RecipeGenerator: undefined;
+  IngredientsList: undefined;
+  SaveRecipe: undefined;
+  Profile: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -71,6 +79,9 @@ export default function App() {
         <Stack.Screen name="Onboarding" component={OnboardingScreen} />
         <Stack.Screen name="Settings" component={SettingsScreen} />
         <Stack.Screen name="RecipeGenerator" component={RecipeGenerator} />
+        <Stack.Screen name="IngredientsList" component={IngredientsList} />
+        <Stack.Screen name="SaveRecipe" component={SaveRecipe} />
+        <Stack.Screen name="Profile" component={Profile} />
       </Stack.Navigator>
     </NavigationContainer>
   );
