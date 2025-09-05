@@ -39,8 +39,12 @@ const API_KEY = "AIzaSyA1OAG1LwmqHRIOwPaZNQr6lEuNWaM8XR8";
 
 const RecipeGenerator = ({ navigation }: Props) => {
   const [ingredients, setIngredients] = useState<string[]>([]);
-  const [dietaryPreference, setDietaryPreference] = useState("");
-  const [cuisineType, setCuisineType] = useState("");
+  const [userPreferences, setUserPreferences] = useState({
+    dietaryLifestyle: "",
+    allergies: [] as string[],
+    religiousPractice: "",
+    calorieGoal: ""
+  });
   const [loading, setLoading] = useState(true);
   const [generatedRecipes, setGeneratedRecipes] = useState<Recipe[]>([]);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -48,35 +52,44 @@ const RecipeGenerator = ({ navigation }: Props) => {
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged((user) => {
       setCurrentUser(user);
+      if (user) {
+        fetchUserData(user.uid);
+      }
     });
     return unsubscribe;
   }, []);
 
-  useEffect(() => {
-    const fetchIngredients = async () => {
-      const user = auth.currentUser;
-      if (!user) {
-        alert("You must be logged in to generate recipes.");
-        setLoading(false);
-        return;
+  const fetchUserData = async (userId: string) => {
+    try {
+      const userDocSnap = await getDoc(doc(db, "users", userId));
+      if (userDocSnap.exists()) {
+        const userData = userDocSnap.data();
+        const userIngredients = userData.ingredients || [];
+        setIngredients(userIngredients.map((ing: any) => ing.name));
+
+        // Set user preferences
+        setUserPreferences({
+          dietaryLifestyle: userData.dietaryLifestyle || "",
+          allergies: userData.allergies || [],
+          religiousPractice: userData.religiousPractice || "",
+          calorieGoal: userData.calorieGoal || ""
+        });
+      } else {
+        setIngredients([]);
+        setUserPreferences({
+          dietaryLifestyle: "",
+          allergies: [],
+          religiousPractice: "",
+          calorieGoal: ""
+        });
       }
-      try {
-        const userDocSnap = await getDoc(doc(db, "users", user.uid));
-        if (userDocSnap.exists()) {
-          const userData = userDocSnap.data();
-          const userIngredients = userData.ingredients || [];
-          setIngredients(userIngredients.map((ing: any) => ing.name));
-        } else {
-          setIngredients([]);
-        }
-      } catch (error: any) {
-        alert("Failed to fetch ingredients: " + error.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchIngredients();
-  }, []);
+    } catch (error: any) {
+      console.error("Failed to fetch user data:", error);
+      alert("Failed to load your data. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const generateRecipes = async () => {
     if (ingredients.length === 0) {
@@ -91,20 +104,45 @@ const RecipeGenerator = ({ navigation }: Props) => {
       const genAI = new GoogleGenerativeAI.GoogleGenerativeAI(API_KEY);
       const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
+      // Build preferences string
+      let preferencesString = "";
+      if (userPreferences.dietaryLifestyle && userPreferences.dietaryLifestyle !== "None") {
+        preferencesString += `Dietary Lifestyle: ${userPreferences.dietaryLifestyle}. `;
+      }
+      if (userPreferences.allergies && userPreferences.allergies.length > 0) {
+        preferencesString += `Allergies to avoid: ${userPreferences.allergies.join(", ")}. `;
+      }
+      if (userPreferences.religiousPractice && userPreferences.religiousPractice !== "None") {
+        preferencesString += `Religious/Cultural Practice: ${userPreferences.religiousPractice}. `;
+      }
+      if (userPreferences.calorieGoal && userPreferences.calorieGoal !== "None") {
+        preferencesString += `Calorie Goal: ${userPreferences.calorieGoal}. `;
+      }
+
       const prompt = `
-        Generate 5 different and diverse recipes based on the following ingredients and preferences.
+        Generate 5 different and diverse recipes based on the following ingredients and user preferences.
         Each recipe should be unique and use different combinations of the provided ingredients.
-        
+        Make sure to respect all dietary restrictions and preferences.
+
         Ingredients: ${ingredients.join(", ")}
-        ${dietaryPreference ? `Dietary Preference: ${dietaryPreference}` : ""}
-        ${cuisineType ? `Cuisine Type: ${cuisineType}` : ""}
-        
+        ${preferencesString ? `User Preferences: ${preferencesString}` : ""}
+
+        IMPORTANT: For the instructions array, provide each step as a separate string starting with "Step X:" where X is the step number.
+        Each instruction should be a complete, detailed step that can stand alone.
+        Do NOT include the step number in the instruction text itself - just start with "Step X:".
+
         Please provide the recipes in the following JSON array format:
         [
           {
             "title": "Recipe Title 1",
             "ingredients": ["ingredient 1", "ingredient 2", ...],
-            "instructions": ["Step 1: Detailed instruction here", "Step 2: Next instruction here", ...],
+            "instructions": [
+              "Step 1: Preheat oven to 375°F (190°C)",
+              "Step 2: Mix all dry ingredients in a large bowl",
+              "Step 3: Add wet ingredients and stir until combined",
+              "Step 4: Pour batter into greased pan",
+              "Step 5: Bake for 25-30 minutes until golden brown"
+            ],
             "cookingTime": "XX minutes",
             "difficulty": "Easy/Medium/Hard",
             "servings": X
@@ -135,9 +173,6 @@ const RecipeGenerator = ({ navigation }: Props) => {
   };
 
   const clearForm = () => {
-    setIngredients([]);
-    setDietaryPreference("");
-    setCuisineType("");
     setGeneratedRecipes([]);
   };
 
@@ -186,33 +221,46 @@ const RecipeGenerator = ({ navigation }: Props) => {
             {/* Title */}
             <Text style={uiStyles.title}>What are you in the mood for? 🍽️</Text>
 
-            {/* Input Fields */}
+            {/* User Data Display */}
             <View style={{ width: "100%", marginVertical: 12 }}>
-              <Text style={uiStyles.inputLabel}>Ingredients</Text>
+              <Text style={uiStyles.inputLabel}>Your Ingredients</Text>
               <TextInput
-                style={uiStyles.input}
-                placeholder="e.g., chicken, rice, vegetables"
-                value={ingredients.join(", ")}
-                onChangeText={(text) => setIngredients(text.split(",").map(item => item.trim()))}
+                style={[uiStyles.input, uiStyles.readOnlyInput]}
+                value={ingredients.length > 0 ? ingredients.join(", ") : "No ingredients added yet"}
+                editable={false}
                 multiline
                 numberOfLines={2}
               />
 
-              <Text style={uiStyles.inputLabel}>Dietary Preference</Text>
-              <TextInput
-                style={uiStyles.input}
-                placeholder="e.g., vegetarian, gluten-free"
-                value={dietaryPreference}
-                onChangeText={setDietaryPreference}
-              />
-
-              <Text style={uiStyles.inputLabel}>Cuisine Type</Text>
-              <TextInput
-                style={uiStyles.input}
-                placeholder="e.g., Italian, Mexican"
-                value={cuisineType}
-                onChangeText={setCuisineType}
-              />
+              <Text style={uiStyles.inputLabel}>Your Preferences</Text>
+              <View style={uiStyles.preferencesContainer}>
+                {userPreferences.dietaryLifestyle && userPreferences.dietaryLifestyle !== "None" && (
+                  <Text style={uiStyles.preferenceText}>
+                    🍽️ Dietary: {userPreferences.dietaryLifestyle}
+                  </Text>
+                )}
+                {userPreferences.allergies && userPreferences.allergies.length > 0 && (
+                  <Text style={uiStyles.preferenceText}>
+                    ⚠️ Allergies: {userPreferences.allergies.join(", ")}
+                  </Text>
+                )}
+                {userPreferences.religiousPractice && userPreferences.religiousPractice !== "None" && (
+                  <Text style={uiStyles.preferenceText}>
+                    🙏 Practice: {userPreferences.religiousPractice}
+                  </Text>
+                )}
+                {userPreferences.calorieGoal && userPreferences.calorieGoal !== "None" && (
+                  <Text style={uiStyles.preferenceText}>
+                    🎯 Goal: {userPreferences.calorieGoal}
+                  </Text>
+                )}
+                {(!userPreferences.dietaryLifestyle || userPreferences.dietaryLifestyle === "None") &&
+                 (!userPreferences.allergies || userPreferences.allergies.length === 0) &&
+                 (!userPreferences.religiousPractice || userPreferences.religiousPractice === "None") &&
+                 (!userPreferences.calorieGoal || userPreferences.calorieGoal === "None") && (
+                  <Text style={uiStyles.preferenceText}>No preferences set</Text>
+                )}
+              </View>
             </View>
 
             {/* Buttons */}
@@ -261,12 +309,29 @@ const RecipeGenerator = ({ navigation }: Props) => {
                     ))}
 
                     <Text style={uiStyles.sectionTitle}>Instructions</Text>
-                    {recipe.instructions.map((inst, index) => (
-                      <View key={index} style={uiStyles.instructionStep}>
-                        <Text style={uiStyles.stepNumber}>{index + 1}.</Text>
-                        <Text style={uiStyles.instructionText}>{inst}</Text>
-                      </View>
-                    ))}
+                    {recipe.instructions.map((inst, index) => {
+                      // Check if instruction already starts with "Step X:" format
+                      const isStepFormat = /^Step \d+:/i.test(inst.trim());
+
+                      if (isStepFormat) {
+                        // Remove "Step X:" and display with our own numbering
+                        const instructionText = inst.replace(/^Step \d+:\s*/i, '');
+                        return (
+                          <View key={index} style={uiStyles.instructionStep}>
+                            <Text style={uiStyles.stepNumber}>{index + 1}.</Text>
+                            <Text style={uiStyles.instructionText}>{instructionText}</Text>
+                          </View>
+                        );
+                      } else {
+                        // Display as-is with our numbering
+                        return (
+                          <View key={index} style={uiStyles.instructionStep}>
+                            <Text style={uiStyles.stepNumber}>{index + 1}.</Text>
+                            <Text style={uiStyles.instructionText}>{inst}</Text>
+                          </View>
+                        );
+                      }
+                    })}
 
                     <TouchableOpacity
                       style={[uiStyles.button, uiStyles.saveButton]}
@@ -437,6 +502,22 @@ const uiStyles = StyleSheet.create({
   saveButton: {
     backgroundColor: "#4CAF50",
     marginTop: 12,
+  },
+  readOnlyInput: {
+    backgroundColor: "#f5f5f5",
+    color: "#666",
+  },
+  preferencesContainer: {
+    backgroundColor: "#f8f9fa",
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 10,
+  },
+  preferenceText: {
+    fontSize: 14,
+    color: "#555",
+    marginBottom: 4,
+    lineHeight: 20,
   },
 });
 
