@@ -29,7 +29,6 @@ const dietaryOptions = [
 ];
 
 const allergyOptions = [
-  'None',
   'Peanuts',
   'Tree nuts',
   'Dairy',
@@ -62,7 +61,7 @@ const Settings = () => {
 
   // User preferences
   const [dietaryLifestyle, setDietaryLifestyle] = useState('');
-  const [allergies, setAllergies] = useState('');
+  const [allergies, setAllergies] = useState<string[]>([]);
   const [religiousPractice, setReligiousPractice] = useState('');
   const [calorieGoal, setCalorieGoal] = useState('');
 
@@ -83,7 +82,7 @@ const Settings = () => {
       if (userDoc.exists()) {
         const userData = userDoc.data();
         setDietaryLifestyle(userData.dietaryLifestyle || '');
-        setAllergies(userData.allergies || '');
+        setAllergies(userData.allergies || []);
         setReligiousPractice(userData.religiousPractice || '');
         setCalorieGoal(userData.calorieGoal || '');
       }
@@ -91,6 +90,14 @@ const Settings = () => {
       Alert.alert('Error', 'Failed to load preferences: ' + error.message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const toggleAllergy = (allergy: string) => {
+    if (allergies.includes(allergy)) {
+      setAllergies(allergies.filter(a => a !== allergy));
+    } else {
+      setAllergies([...allergies, allergy]);
     }
   };
 
@@ -159,18 +166,15 @@ const Settings = () => {
           </View>
 
           <Text style={styles.label}>Allergies</Text>
-          <View style={styles.pickerWrapper}>
-            <Picker
-              selectedValue={allergies}
-              onValueChange={setAllergies}
-              mode="dropdown"
-            >
-              <Picker.Item label="Select one or more allergies" value="" />
-              {allergyOptions.map(opt => (
-                <Picker.Item key={opt} label={opt} value={opt} />
-              ))}
-            </Picker>
-          </View>
+          {allergyOptions.map((allergy) => (
+            <View key={allergy} style={styles.checkboxRow}>
+              <CustomCheckBox
+                checked={allergies.includes(allergy)}
+                onToggle={() => toggleAllergy(allergy)}
+              />
+              <Text style={styles.checkboxLabel}>{allergy}</Text>
+            </View>
+          ))}
 
           <Text style={styles.label}>Religious/Cultural Dietary Practices</Text>
           <View style={styles.pickerWrapper}>
@@ -310,6 +314,15 @@ const styles = StyleSheet.create({
     color: '#2196F3',
     fontWeight: '600',
     fontSize: 16,
+  },
+  checkboxRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 8,
+  },
+  checkboxLabel: {
+    fontSize: 16,
+    marginLeft: 8,
   },
 });
 

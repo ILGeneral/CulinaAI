@@ -1,0 +1,40 @@
+graph TD
+    A[Culina AI Recipe App] --> B[Frontend - React Native]
+    A --> C[Backend - Python Flask]
+    A --> D[Database - Firebase Firestore]
+
+    B --> B1[Authentication]
+    B --> B2[Recipe Generation]
+    B --> B3[Ingredient Management]
+    B --> B4[User Profile]
+
+    B1 --> B1a[Login Screen]
+    B1 --> B1b[Register Screen]
+    B1 --> B1c[Onboarding]
+
+    B2 --> B2a[Recipe Generator Screen]
+    B2 --> B2b[Gemini AI Integration]
+
+    B3 --> B3a[Ingredients List Screen]
+    B3 --> B3b[CRUD Operations]
+
+    B4 --> B4a[Home Screen]
+    B4 --> B4b[Settings Screen]
+
+    C --> C1[Flask API Server]
+    C --> C2[Recipe Generation Endpoint]
+    C --> C3[User Data Management]
+
+    D --> D1[Users Collection]
+    D --> D2[Recipes Collection]
+    D --> D3[Ingredients Collection]
+
+    B1a --> D1
+    B1b --> D1
+    B2a --> C2
+    B3a --> D3
+    B4a --> D2
+
+    C1 --> D1
+    C1 --> D2
+    C1 --> D3

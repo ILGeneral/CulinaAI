@@ -24,21 +24,75 @@ export interface UserData {
   updatedAt?: Date;
 }
 
-export const saveRecipe = async (userId: string, recipe: Omit<SavedRecipe, 'id' | 'userId' | 'savedAt'>): Promise<void> => {
-  try {
-    const recipeId = `${userId}_${recipe.title.replace(/\s+/g, '_').toLowerCase()}`;
-    const recipeRef = doc(db, 'recipes', recipeId);
+export interface Ingredient {
+  id: string;
+  name: string;
+  quantity: string;
+  unit: string;
+  category?: string;
+  img?: string;
+  calories?: string;
+  userId: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
 
-    const savedRecipe: SavedRecipe = {
-      ...recipe,
-      id: recipeId,
-      userId,
-      savedAt: new Date(),
+export const getUserIngredients = async (userId: string): Promise<Ingredient[]> => {
+  try {
+    const ingredientsRef = collection(db, 'ingredients');
+    const q = query(ingredientsRef, where('userId', '==', userId));
+    const querySnapshot = await getDocs(q);
+
+    const ingredients: Ingredient[] = [];
+    querySnapshot.forEach((doc) => {
+      ingredients.push(doc.data() as Ingredient);
+    });
+
+    return ingredients;
+  } catch (error) {
+    console.error('Error fetching user ingredients:', error);
+    throw error;
+  }
+};
+
+export const addOrUpdateIngredient = async (ingredient: Omit<Ingredient, 'createdAt' | 'updatedAt'>): Promise<void> => {
+  try {
+    const ingredientRef = doc(db, 'ingredients', ingredient.id);
+    const now = new Date();
+    const ingredientData: any = {
+      id: ingredient.id,
+      name: ingredient.name,
+      quantity: ingredient.quantity,
+      unit: ingredient.unit,
+      userId: ingredient.userId,
+      createdAt: now,
+      updatedAt: now,
     };
 
-    await setDoc(recipeRef, savedRecipe);
+    // Only include optional fields if they are defined
+    if (ingredient.category !== undefined) {
+      ingredientData.category = ingredient.category;
+    }
+    if (ingredient.img !== undefined) {
+      ingredientData.img = ingredient.img;
+    }
+    if (ingredient.calories !== undefined) {
+      ingredientData.calories = ingredient.calories;
+    }
+
+    await setDoc(ingredientRef, ingredientData, { merge: true });
   } catch (error) {
-    console.error('Error saving recipe:', error);
+    console.error('Error adding/updating ingredient:', error);
+    throw error;
+  }
+};
+
+export const deleteIngredient = async (ingredientId: string): Promise<void> => {
+  try {
+    const ingredientRef = doc(db, 'ingredients', ingredientId);
+    await updateDoc(ingredientRef, { deleted: true, updatedAt: new Date() });
+  } catch (error) {
+    console.error('Error deleting ingredient:', error);
     throw error;
   }
 };
@@ -116,6 +170,23 @@ export const createUserData = async (userId: string, userData: UserData): Promis
     });
   } catch (error) {
     console.error('Error creating user data:', error);
+    throw error;
+  }
+};
+
+export const saveRecipe = async (userId: string, recipe: Omit<SavedRecipe, 'id' | 'userId' | 'savedAt'>): Promise<void> => {
+  try {
+    const recipeId = `${userId}_${Date.now()}`;
+    const recipeRef = doc(db, 'recipes', recipeId);
+    const recipeData: SavedRecipe = {
+      ...recipe,
+      id: recipeId,
+      userId,
+      savedAt: new Date(),
+    };
+    await setDoc(recipeRef, recipeData);
+  } catch (error) {
+    console.error('Error saving recipe:', error);
     throw error;
   }
 };

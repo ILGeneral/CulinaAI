@@ -1,14 +1,36 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Image, ScrollView } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../App';
 import { auth } from '../utils/authPersistence';
+import { getUserData } from '../utils/firestore';
 import Background from '../components/background';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Profile'>;
 
 export default function Profile({ navigation }: Props) {
   const user = auth.currentUser;
+  const [username, setUsername] = useState<string>('');
+
+  useEffect(() => {
+    const fetchUsername = async () => {
+      if (user) {
+        try {
+          const userData = await getUserData(user.uid);
+          if (userData?.username) {
+            setUsername(userData.username);
+          } else {
+            setUsername(user?.displayName || 'User');
+          }
+        } catch (error) {
+          console.error('Error fetching username:', error);
+          setUsername(user?.displayName || 'User');
+        }
+      }
+    };
+
+    fetchUsername();
+  }, [user]);
 
   const handleLogout = () => {
     auth.signOut().then(() => {
@@ -28,7 +50,7 @@ export default function Profile({ navigation }: Props) {
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.profilePicWrapper}>
           <Image source={require('../assets/profile.png')} style={styles.profilePic} />
-          <Text style={styles.profileName}>{user?.displayName || 'John Doe'}</Text>
+          <Text style={styles.profileName}>{username || user?.displayName || 'User'}</Text>
         </View>
 
         {/* Divider */}
@@ -77,6 +99,8 @@ export default function Profile({ navigation }: Props) {
     </Background>
   );
 }
+
+
 
 const styles = StyleSheet.create({
   header: { 
@@ -131,4 +155,5 @@ const styles = StyleSheet.create({
     height: 70,
     resizeMode: 'contain',
   },
+
 });

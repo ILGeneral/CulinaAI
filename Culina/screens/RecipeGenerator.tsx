@@ -21,6 +21,8 @@ import { saveRecipe } from "../utils/firestore";
 import { User } from "firebase/auth";
 import Background from "../components/background";
 import CustomBottomBar from "../components/customBottomBar";
+import { db } from "../firebaseConfig";
+import { doc, getDoc } from "firebase/firestore";
 
 type Props = NativeStackScreenProps<RootStackParamList, "RecipeGenerator">;
 
@@ -36,10 +38,10 @@ interface Recipe {
 const API_KEY = "AIzaSyA1OAG1LwmqHRIOwPaZNQr6lEuNWaM8XR8";
 
 const RecipeGenerator = ({ navigation }: Props) => {
-  const [ingredients, setIngredients] = useState("");
+  const [ingredients, setIngredients] = useState<string[]>([]);
   const [dietaryPreference, setDietaryPreference] = useState("");
   const [cuisineType, setCuisineType] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [generatedRecipes, setGeneratedRecipes] = useState<Recipe[]>([]);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
 
@@ -50,9 +52,33 @@ const RecipeGenerator = ({ navigation }: Props) => {
     return unsubscribe;
   }, []);
 
+  useEffect(() => {
+    const fetchIngredients = async () => {
+      const user = auth.currentUser;
+      if (!user) {
+        alert("You must be logged in to generate recipes.");
+        setLoading(false);
+        return;
+      }
+      try {
+        const docSnap = await getDoc(doc(db, "ingredients", user.uid));
+        if (docSnap.exists()) {
+          setIngredients(docSnap.data().items || []);
+        } else {
+          setIngredients([]);
+        }
+      } catch (error: any) {
+        alert("Failed to fetch ingredients: " + error.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchIngredients();
+  }, []);
+
   const generateRecipes = async () => {
-    if (!ingredients.trim()) {
-      Alert.alert("Error", "Please enter at least some ingredients");
+    if (ingredients.length === 0) {
+      alert("No ingredients found. Please add ingredients first.");
       return;
     }
 
@@ -67,7 +93,7 @@ const RecipeGenerator = ({ navigation }: Props) => {
         Generate 5 different and diverse recipes based on the following ingredients and preferences.
         Each recipe should be unique and use different combinations of the provided ingredients.
         
-        Ingredients: ${ingredients}
+        Ingredients: ${ingredients.join(", ")}
         ${dietaryPreference ? `Dietary Preference: ${dietaryPreference}` : ""}
         ${cuisineType ? `Cuisine Type: ${cuisineType}` : ""}
         
@@ -107,7 +133,7 @@ const RecipeGenerator = ({ navigation }: Props) => {
   };
 
   const clearForm = () => {
-    setIngredients("");
+    setIngredients([]);
     setDietaryPreference("");
     setCuisineType("");
     setGeneratedRecipes([]);
@@ -156,7 +182,7 @@ const RecipeGenerator = ({ navigation }: Props) => {
             />
 
             {/* Title */}
-            <Text style={uiStyles.title}>What’s do you want to make?</Text>
+            <Text style={uiStyles.title}>What do you want to make?</Text>
 
             {/* Input Fields */}
             <View style={{ width: "100%", marginVertical: 12 }}>
@@ -164,8 +190,8 @@ const RecipeGenerator = ({ navigation }: Props) => {
               <TextInput
                 style={uiStyles.input}
                 placeholder="e.g., chicken, rice, vegetables"
-                value={ingredients}
-                onChangeText={setIngredients}
+                value={ingredients.join(", ")}
+                onChangeText={(text) => setIngredients(text.split(",").map(item => item.trim()))}
                 multiline
                 numberOfLines={2}
               />

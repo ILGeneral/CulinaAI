@@ -18,6 +18,7 @@ import Background from "../components/background";
 import CustomBottomBar from "../components/customBottomBar";
 import RecipeCard from "components/recipeCard";
 import { fetchRecipes } from "components/backendDapat2";
+import ProfileScreen from './profile'
 
 type Props = NativeStackScreenProps<RootStackParamList, "Home">;
 
