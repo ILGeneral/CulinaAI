@@ -46,7 +46,7 @@ const GeminiChat = () => {
         ]);
       } catch (error) {
         console.error("Error initializing chat:", error);
-        // If there's an error, set a default greeting message
+        // If error, set default greetings
         setMessages([
           {
             text: "There seems to be an issue connecting to the AI service. Please check your internet connection and try again! - Culina",

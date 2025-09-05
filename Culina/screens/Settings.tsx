@@ -12,9 +12,10 @@ import {
 import { Picker } from '@react-native-picker/picker';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc } from 'firebase/firestore';
 import { auth } from '../utils/authPersistence';
 import { db } from '../firebaseConfig';
+import { updateUserData } from '../utils/firestore';
 import CustomCheckBox from '../components/customCheckBox';
 import type { RootStackParamList } from '../App';
 
@@ -110,14 +111,12 @@ const Settings = () => {
         return;
       }
 
-      await setDoc(doc(db, 'users', user.uid), {
-        email: user.email,
+      await updateUserData(user.uid, {
         dietaryLifestyle,
         allergies,
         religiousPractice,
         calorieGoal,
-        updatedAt: new Date(),
-      }, { merge: true });
+      });
 
       Alert.alert('Success', 'Preferences saved successfully!');
     } catch (error: any) {

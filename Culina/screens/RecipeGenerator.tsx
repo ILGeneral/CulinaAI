@@ -61,9 +61,11 @@ const RecipeGenerator = ({ navigation }: Props) => {
         return;
       }
       try {
-        const docSnap = await getDoc(doc(db, "ingredients", user.uid));
-        if (docSnap.exists()) {
-          setIngredients(docSnap.data().items || []);
+        const userDocSnap = await getDoc(doc(db, "users", user.uid));
+        if (userDocSnap.exists()) {
+          const userData = userDocSnap.data();
+          const userIngredients = userData.ingredients || [];
+          setIngredients(userIngredients.map((ing: any) => ing.name));
         } else {
           setIngredients([]);
         }
@@ -182,7 +184,7 @@ const RecipeGenerator = ({ navigation }: Props) => {
             />
 
             {/* Title */}
-            <Text style={uiStyles.title}>What do you want to make?</Text>
+            <Text style={uiStyles.title}>What are you in the mood for? 🍽️</Text>
 
             {/* Input Fields */}
             <View style={{ width: "100%", marginVertical: 12 }}>

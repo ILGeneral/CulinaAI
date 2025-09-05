@@ -39,16 +39,15 @@ export interface Ingredient {
 
 export const getUserIngredients = async (userId: string): Promise<Ingredient[]> => {
   try {
-    const ingredientsRef = collection(db, 'ingredients');
-    const q = query(ingredientsRef, where('userId', '==', userId));
-    const querySnapshot = await getDocs(q);
+    const userRef = doc(db, 'users', userId);
+    const userSnap = await getDoc(userRef);
 
-    const ingredients: Ingredient[] = [];
-    querySnapshot.forEach((doc) => {
-      ingredients.push(doc.data() as Ingredient);
-    });
-
-    return ingredients;
+    if (userSnap.exists()) {
+      const userData = userSnap.data();
+      return userData.ingredients || [];
+    } else {
+      return [];
+    }
   } catch (error) {
     console.error('Error fetching user ingredients:', error);
     throw error;
@@ -57,9 +56,18 @@ export const getUserIngredients = async (userId: string): Promise<Ingredient[]> 
 
 export const addOrUpdateIngredient = async (ingredient: Omit<Ingredient, 'createdAt' | 'updatedAt'>): Promise<void> => {
   try {
-    const ingredientRef = doc(db, 'ingredients', ingredient.id);
+    const userRef = doc(db, 'users', ingredient.userId);
+    const userSnap = await getDoc(userRef);
+
+    if (!userSnap.exists()) {
+      throw new Error('User document not found');
+    }
+
+    const userData = userSnap.data();
+    const existingIngredients = userData.ingredients || [];
     const now = new Date();
-    const ingredientData: any = {
+
+    const ingredientData: Ingredient = {
       id: ingredient.id,
       name: ingredient.name,
       quantity: ingredient.quantity,
@@ -69,7 +77,7 @@ export const addOrUpdateIngredient = async (ingredient: Omit<Ingredient, 'create
       updatedAt: now,
     };
 
-    // Only include optional fields if they are defined
+    // optional fields
     if (ingredient.category !== undefined) {
       ingredientData.category = ingredient.category;
     }
@@ -80,7 +88,20 @@ export const addOrUpdateIngredient = async (ingredient: Omit<Ingredient, 'create
       ingredientData.calories = ingredient.calories;
     }
 
-    await setDoc(ingredientRef, ingredientData, { merge: true });
+    const existingIndex = existingIngredients.findIndex((ing: Ingredient) => ing.id === ingredient.id);
+
+    if (existingIndex >= 0) {
+      // Update ingredients
+      existingIngredients[existingIndex] = ingredientData;
+    } else {
+      // Add new ingredients
+      existingIngredients.push(ingredientData);
+    }
+
+    await updateDoc(userRef, {
+      ingredients: existingIngredients,
+      updatedAt: new Date(),
+    });
   } catch (error) {
     console.error('Error adding/updating ingredient:', error);
     throw error;
@@ -89,8 +110,24 @@ export const addOrUpdateIngredient = async (ingredient: Omit<Ingredient, 'create
 
 export const deleteIngredient = async (ingredientId: string): Promise<void> => {
   try {
-    const ingredientRef = doc(db, 'ingredients', ingredientId);
-    await updateDoc(ingredientRef, { deleted: true, updatedAt: new Date() });
+    const userId = ingredientId.split('_')[0];
+    const userRef = doc(db, 'users', userId);
+    const userSnap = await getDoc(userRef);
+
+    if (!userSnap.exists()) {
+      throw new Error('User document not found');
+    }
+
+    const userData = userSnap.data();
+    const existingIngredients = userData.ingredients || [];
+
+    // Filter out the ingredient to delete
+    const updatedIngredients = existingIngredients.filter((ing: Ingredient) => ing.id !== ingredientId);
+
+    await updateDoc(userRef, {
+      ingredients: updatedIngredients,
+      updatedAt: new Date(),
+    });
   } catch (error) {
     console.error('Error deleting ingredient:', error);
     throw error;
@@ -99,16 +136,15 @@ export const deleteIngredient = async (ingredientId: string): Promise<void> => {
 
 export const getUserRecipes = async (userId: string): Promise<SavedRecipe[]> => {
   try {
-    const recipesRef = collection(db, 'recipes');
-    const q = query(recipesRef, where('userId', '==', userId));
-    const querySnapshot = await getDocs(q);
+    const userRef = doc(db, 'users', userId);
+    const userSnap = await getDoc(userRef);
 
-    const recipes: SavedRecipe[] = [];
-    querySnapshot.forEach((doc) => {
-      recipes.push(doc.data() as SavedRecipe);
-    });
-
-    return recipes;
+    if (userSnap.exists()) {
+      const userData = userSnap.data();
+      return userData.recipes || [];
+    } else {
+      return [];
+    }
   } catch (error) {
     console.error('Error fetching user recipes:', error);
     throw error;
@@ -117,11 +153,16 @@ export const getUserRecipes = async (userId: string): Promise<SavedRecipe[]> => 
 
 export const getRecipeById = async (recipeId: string): Promise<SavedRecipe | null> => {
   try {
-    const recipeRef = doc(db, 'recipes', recipeId);
-    const recipeSnap = await getDoc(recipeRef);
+    // Since recipeId is in format userId_timestamp, we can extract userId
+    const userId = recipeId.split('_')[0];
+    const userRef = doc(db, 'users', userId);
+    const userSnap = await getDoc(userRef);
 
-    if (recipeSnap.exists()) {
-      return recipeSnap.data() as SavedRecipe;
+    if (userSnap.exists()) {
+      const userData = userSnap.data();
+      const userRecipes = userData.recipes || [];
+      const recipe = userRecipes.find((rec: SavedRecipe) => rec.id === recipeId);
+      return recipe || null;
     } else {
       return null;
     }
@@ -166,6 +207,8 @@ export const createUserData = async (userId: string, userData: UserData): Promis
     const userRef = doc(db, 'users', userId);
     await setDoc(userRef, {
       ...userData,
+      ingredients: [],
+      recipes: [],
       createdAt: new Date(),
     });
   } catch (error) {
@@ -176,15 +219,30 @@ export const createUserData = async (userId: string, userData: UserData): Promis
 
 export const saveRecipe = async (userId: string, recipe: Omit<SavedRecipe, 'id' | 'userId' | 'savedAt'>): Promise<void> => {
   try {
+    const userRef = doc(db, 'users', userId);
+    const userSnap = await getDoc(userRef);
+
+    if (!userSnap.exists()) {
+      throw new Error('User document not found');
+    }
+
+    const userData = userSnap.data();
+    const existingRecipes = userData.recipes || [];
     const recipeId = `${userId}_${Date.now()}`;
-    const recipeRef = doc(db, 'recipes', recipeId);
+
     const recipeData: SavedRecipe = {
       ...recipe,
       id: recipeId,
       userId,
       savedAt: new Date(),
     };
-    await setDoc(recipeRef, recipeData);
+
+    existingRecipes.push(recipeData);
+
+    await updateDoc(userRef, {
+      recipes: existingRecipes,
+      updatedAt: new Date(),
+    });
   } catch (error) {
     console.error('Error saving recipe:', error);
     throw error;

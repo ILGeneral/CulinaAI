@@ -147,22 +147,7 @@ const IngredientsList = ({ navigation }: Props) => {
     );
   };
 
-  const saveIngredients = async (ingredients: string[]) => {
-    const user = auth.currentUser;
-    if (!user) {
-      alert('You must be logged in to save ingredients.');
-      return;
-    }
-    try {
-      await setDoc(doc(db, 'ingredients', user.uid), {
-        items: ingredients,
-        updatedAt: new Date(),
-      });
-      alert('Ingredients saved!');
-    } catch (error: any) {
-      alert('Failed to save ingredients: ' + error.message);
-    }
-  };
+
 
   const filteredIngredients = ingredients.filter((ingredient) =>
     ingredient.name.toLowerCase().includes(searchText.toLowerCase())
