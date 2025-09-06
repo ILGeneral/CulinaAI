@@ -1,8 +1,8 @@
 import React from "react";
-import { View, Text, Image, StyleSheet } from "react-native";
+import { View, Text, Image, StyleSheet, TouchableOpacity } from "react-native";
 
-export default function RecipeCard({ recipe }: { recipe: any }) {
-  return (
+export default function RecipeCard({ recipe, onPress }: { recipe: any; onPress?: () => void }) {
+  const CardContent = () => (
     <View style={styles.card}>
       <Image source={{ uri: recipe.image }} style={styles.image} />
       <Text numberOfLines={2} style={styles.title}>
@@ -28,6 +28,16 @@ export default function RecipeCard({ recipe }: { recipe: any }) {
       </View>
     </View>
   );
+
+  if (onPress) {
+    return (
+      <TouchableOpacity onPress={onPress}>
+        <CardContent />
+      </TouchableOpacity>
+    );
+  }
+
+  return <CardContent />;
 }
 
 const styles = StyleSheet.create({

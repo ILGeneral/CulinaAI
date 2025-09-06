@@ -17,8 +17,6 @@ import * as GoogleGenerativeAI from "@google/generative-ai";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "../App";
 import { auth } from "../utils/authPersistence";
-import { saveRecipe } from "../utils/firestore";
-import { User } from "firebase/auth";
 import Background from "../components/background";
 import CustomBottomBar from "../components/customBottomBar";
 import { db } from "../firebaseConfig";
@@ -47,11 +45,10 @@ const RecipeGenerator = ({ navigation }: Props) => {
   });
   const [loading, setLoading] = useState(true);
   const [generatedRecipes, setGeneratedRecipes] = useState<Recipe[]>([]);
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
+
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged((user) => {
-      setCurrentUser(user);
       if (user) {
         fetchUserData(user.uid);
       }
@@ -124,12 +121,18 @@ const RecipeGenerator = ({ navigation }: Props) => {
         Each recipe should be unique and use different combinations of the provided ingredients.
         Make sure to respect all dietary restrictions and preferences.
 
+        IMPORTANT: You MUST ONLY use ingredients from the provided list below.
+        Do NOT add any additional ingredients that are not in the user's ingredients list.
+        If you cannot create a recipe using only the provided ingredients, you should still try to create the best possible recipe with what's available.
+        Do NOT suggest buying or adding new ingredients.
+
         Ingredients: ${ingredients.join(", ")}
         ${preferencesString ? `User Preferences: ${preferencesString}` : ""}
 
         IMPORTANT: For the instructions array, provide each step as a separate string starting with "Step X:" where X is the step number.
         Each instruction should be a complete, detailed step that can stand alone.
         Do NOT include the step number in the instruction text itself - just start with "Step X:".
+        Add as many steps as needed, 5 is not the limit or the required minimum, just ensure clarity and completeness.
 
         Please provide the recipes in the following JSON array format:
         [
@@ -143,7 +146,7 @@ const RecipeGenerator = ({ navigation }: Props) => {
               "Step 4: Pour batter into greased pan",
               "Step 5: Bake for 25-30 minutes until golden brown"
             ],
-            "cookingTime": "XX minutes",
+            "cookingTime": "XX minutes/hours and minutes",
             "difficulty": "Easy/Medium/Hard",
             "servings": X
           },
@@ -174,21 +177,6 @@ const RecipeGenerator = ({ navigation }: Props) => {
 
   const clearForm = () => {
     setGeneratedRecipes([]);
-  };
-
-  const handleSaveRecipe = async (recipe: Recipe) => {
-    if (!currentUser) {
-      Alert.alert("Error", "You must be logged in to save recipes.");
-      return;
-    }
-
-    try {
-      await saveRecipe(currentUser.uid, recipe);
-      Alert.alert("Success", "Recipe saved successfully!");
-    } catch (error: any) {
-      console.error("Error saving recipe:", error);
-      Alert.alert("Error", "Failed to save recipe. Please try again.");
-    }
   };
 
   return (
@@ -292,7 +280,12 @@ const RecipeGenerator = ({ navigation }: Props) => {
             {generatedRecipes.length > 0 && (
               <View style={uiStyles.recipesContainer}>
                 {generatedRecipes.map((recipe, idx) => (
-                  <View key={idx} style={uiStyles.recipeContainer}>
+                  <TouchableOpacity
+                    key={idx}
+                    style={uiStyles.recipeContainer}
+                    onPress={() => navigation.navigate("RecipeDetail", { recipe })}
+                    activeOpacity={0.7}
+                  >
                     <Text style={uiStyles.recipeTitle}>{recipe.title}</Text>
 
                     <View style={uiStyles.recipeMeta}>
@@ -300,46 +293,7 @@ const RecipeGenerator = ({ navigation }: Props) => {
                       <Text style={uiStyles.metaText}>🎯 {recipe.difficulty}</Text>
                       <Text style={uiStyles.metaText}>👥 Serves {recipe.servings}</Text>
                     </View>
-
-                    <Text style={uiStyles.sectionTitle}>Ingredients</Text>
-                    {recipe.ingredients.map((item, index) => (
-                      <Text key={index} style={uiStyles.ingredientItem}>
-                        • {item}
-                      </Text>
-                    ))}
-
-                    <Text style={uiStyles.sectionTitle}>Instructions</Text>
-                    {recipe.instructions.map((inst, index) => {
-                      // Check if instruction already starts with "Step X:" format
-                      const isStepFormat = /^Step \d+:/i.test(inst.trim());
-
-                      if (isStepFormat) {
-                        // Remove "Step X:" and display with our own numbering
-                        const instructionText = inst.replace(/^Step \d+:\s*/i, '');
-                        return (
-                          <View key={index} style={uiStyles.instructionStep}>
-                            <Text style={uiStyles.stepNumber}>{index + 1}.</Text>
-                            <Text style={uiStyles.instructionText}>{instructionText}</Text>
-                          </View>
-                        );
-                      } else {
-                        // Display as-is with our numbering
-                        return (
-                          <View key={index} style={uiStyles.instructionStep}>
-                            <Text style={uiStyles.stepNumber}>{index + 1}.</Text>
-                            <Text style={uiStyles.instructionText}>{inst}</Text>
-                          </View>
-                        );
-                      }
-                    })}
-
-                    <TouchableOpacity
-                      style={[uiStyles.button, uiStyles.saveButton]}
-                      onPress={() => handleSaveRecipe(recipe)}
-                    >
-                      <Text style={uiStyles.buttonText}>Save Recipe</Text>
-                    </TouchableOpacity>
-                  </View>
+                  </TouchableOpacity>
                 ))}
               </View>
             )}
@@ -518,6 +472,22 @@ const uiStyles = StyleSheet.create({
     color: "#555",
     marginBottom: 4,
     lineHeight: 20,
+  },
+  expandButton: {
+    backgroundColor: "#f0f0f0",
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 6,
+    alignSelf: "center",
+    marginTop: 8,
+  },
+  expandButtonText: {
+    fontSize: 14,
+    color: "#42A5F5",
+    fontWeight: "600",
+  },
+  detailsContainer: {
+    marginTop: 16,
   },
 });
 

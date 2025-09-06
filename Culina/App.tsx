@@ -12,7 +12,7 @@ import RecipeGenerator from './screens/RecipeGenerator';
 import IngredientsList from './screens/ingredientsList';
 import Profile from './screens/profile';
 import SaveRecipe from './screens/saveRecipe';
-
+import RecipeDetail from './screens/RecipeDetail';
 
 import { StatusBar } from 'expo-status-bar';
 import { auth } from './utils/authPersistence';
@@ -31,6 +31,7 @@ export type RootStackParamList = {
   IngredientsList: undefined;
   Profile: undefined;
   SaveRecipe: undefined;
+  RecipeDetail: { recipe: any };
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -43,7 +44,7 @@ export default function App() {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       setUser(currentUser);
-      
+
       if (currentUser) {
         // Check if user has completed onboarding
         const hasCompletedOnboarding = await checkOnboardingStatus(currentUser.uid);
@@ -51,7 +52,7 @@ export default function App() {
       } else {
         setInitialRoute('Login');
       }
-      
+
       setLoading(false);
     });
 
@@ -65,14 +66,14 @@ export default function App() {
   return (
     <NavigationContainer>
       <StatusBar style="auto" />
-      <Stack.Navigator 
-        initialRouteName={initialRoute} 
+      <Stack.Navigator
+        initialRouteName={initialRoute}
         screenOptions={{ headerShown: false }}
       >
         <Stack.Screen name="Login" component={LoginScreen} />
         <Stack.Screen name="Register" component={RegisterScreen} />
-        <Stack.Screen 
-          name="Home" 
+        <Stack.Screen
+          name="Home"
           component={HomeScreen}
         />
         <Stack.Screen name="Gemini" component={GeminiChat} />
@@ -82,6 +83,7 @@ export default function App() {
         <Stack.Screen name="IngredientsList" component={IngredientsList} />
         <Stack.Screen name="Profile" component={Profile} />
         <Stack.Screen name="SaveRecipe" component={SaveRecipe} />
+        <Stack.Screen name="RecipeDetail" component={RecipeDetail} />
       </Stack.Navigator>
     </NavigationContainer>
   );
