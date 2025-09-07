@@ -18,7 +18,7 @@ import Background from "../components/background";
 import CustomBottomBar from "../components/customBottomBar";
 import RecipeCard from "components/recipeCard";
 import { fetchRecipes } from "components/backendDapat2";
-import ProfileScreen from './profile'
+import ProfileScreen from "./profile";
 import { auth } from "../utils/authPersistence";
 import { getUserRecipes, SavedRecipe } from "../utils/firestore";
 import { User } from "firebase/auth";
@@ -105,7 +105,14 @@ const Home = ({ navigation }: Props) => {
               placeholderTextColor="#888"
               style={{ flex: 1, fontSize: 14 }}
             />
-            <Image source={require("../assets/camera.png")} style={styles.icon} />
+
+            {/* Camera button navigates to Permission screen */}
+            <TouchableOpacity onPress={() => navigation.navigate("Permission")}>
+              <Image
+                source={require("../assets/camera.png")}
+                style={styles.icon}
+              />
+            </TouchableOpacity>
           </View>
 
           {/* Saved Recipes Section */}
@@ -122,15 +129,23 @@ const Home = ({ navigation }: Props) => {
                 renderItem={({ item }) => (
                   <TouchableOpacity
                     style={styles.savedRecipeCard}
-                    onPress={() => navigation.navigate("RecipeDetail", { recipe: item })}
+                    onPress={() =>
+                      navigation.navigate("RecipeDetail", { recipe: item })
+                    }
                   >
                     <Text style={styles.savedRecipeTitle} numberOfLines={2}>
                       {item.title}
                     </Text>
                     <View style={styles.savedRecipeMeta}>
-                      <Text style={styles.savedMetaText}>⏱️ {item.cookingTime}</Text>
-                      <Text style={styles.savedMetaText}>🎯 {item.difficulty}</Text>
-                      <Text style={styles.savedMetaText}>👥 Serves {item.servings}</Text>
+                      <Text style={styles.savedMetaText}>
+                        ⏱️ {item.cookingTime}
+                      </Text>
+                      <Text style={styles.savedMetaText}>
+                        🎯 {item.difficulty}
+                      </Text>
+                      <Text style={styles.savedMetaText}>
+                        👥 Serves {item.servings}
+                      </Text>
                     </View>
                   </TouchableOpacity>
                 )}
@@ -152,7 +167,9 @@ const Home = ({ navigation }: Props) => {
               renderItem={({ item }) => (
                 <RecipeCard
                   recipe={item}
-                  onPress={() => navigation.navigate("RecipeDetail", { recipe: item })}
+                  onPress={() =>
+                    navigation.navigate("RecipeDetail", { recipe: item })
+                  }
                 />
               )}
               showsHorizontalScrollIndicator={false}
@@ -162,7 +179,9 @@ const Home = ({ navigation }: Props) => {
           {/* Community Shared Recipes */}
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Top Community-Shared Recipes</Text>
+              <Text style={styles.sectionTitle}>
+                Top Community-Shared Recipes
+              </Text>
               <Text style={styles.seeAll}>See All</Text>
             </View>
             <FlatList
@@ -172,7 +191,9 @@ const Home = ({ navigation }: Props) => {
               renderItem={({ item }) => (
                 <RecipeCard
                   recipe={item}
-                  onPress={() => navigation.navigate("RecipeDetail", { recipe: item })}
+                  onPress={() =>
+                    navigation.navigate("RecipeDetail", { recipe: item })
+                  }
                 />
               )}
               showsHorizontalScrollIndicator={false}

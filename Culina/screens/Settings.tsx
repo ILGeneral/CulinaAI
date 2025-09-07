@@ -8,6 +8,7 @@ import {
   ScrollView,
   Alert,
   ActivityIndicator,
+  Image,
 } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import { useNavigation } from '@react-navigation/native';
@@ -19,6 +20,8 @@ import { updateUserData } from '../utils/firestore';
 import CustomCheckBox from '../components/customCheckBox';
 import type { RootStackParamList } from '../App';
 
+import Background from 'components/background';
+
 const dietaryOptions = [
   'None',
   'Vegetarian',
@@ -29,29 +32,11 @@ const dietaryOptions = [
   'Low-Carb',
 ];
 
-const allergyOptions = [
-  'Peanuts',
-  'Tree nuts',
-  'Dairy',
-  'Gluten',
-  'Soy',
-  'Shellfish',
-];
+const allergyOptions = ['Peanuts', 'Tree nuts', 'Dairy', 'Gluten', 'Soy', 'Shellfish'];
 
-const religiousOptions = [
-  'None',
-  'Halal',
-  'Kosher',
-  'Buddhist',
-  'Hindu',
-  'Other',
-];
+const religiousOptions = ['None', 'Halal', 'Kosher', 'Buddhist', 'Hindu', 'Other'];
 
-const calorieOptions = [
-  'Maintain weight',
-  'Lose weight',
-  'Gain weight',
-];
+const calorieOptions = ['Maintain weight', 'Lose weight', 'Gain weight'];
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'Home'>;
 
@@ -96,7 +81,7 @@ const Settings = () => {
 
   const toggleAllergy = (allergy: string) => {
     if (allergies.includes(allergy)) {
-      setAllergies(allergies.filter(a => a !== allergy));
+      setAllergies(allergies.filter((a) => a !== allergy));
     } else {
       setAllergies([...allergies, allergy]);
     }
@@ -128,113 +113,139 @@ const Settings = () => {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#2196F3" />
-          <Text style={styles.loadingText}>Loading preferences...</Text>
-        </View>
-      </SafeAreaView>
+      <Background>
+        <SafeAreaView style={styles.container}>
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#2196F3" />
+            <Text style={styles.loadingText}>Loading preferences...</Text>
+          </View>
+        </SafeAreaView>
+      </Background>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        <View style={styles.header}>
-          <Text style={styles.title}>Settings</Text>
-          <Text style={styles.subtitle}>
-            Manage your dietary preferences and settings
-          </Text>
-        </View>
+    <Background>
+      <SafeAreaView style={styles.container}>
+        <View style={styles.contentWrapper}>
+          <ScrollView contentContainerStyle={styles.scrollContent}>
+            {/* Top header with back + icon + title */}
+            <View style={styles.topHeader}>
+              <TouchableOpacity
+                onPress={() => navigation.goBack()}
+                style={styles.backButton}
+              >
+                <Image
+                  source={require('../assets/back.png')} // back arrow image
+                  style={styles.backIcon}
+                />
+              </TouchableOpacity>
 
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Dietary Preferences</Text>
-          
-          <Text style={styles.label}>Dietary Lifestyle</Text>
-          <View style={styles.pickerWrapper}>
-            <Picker
-              selectedValue={dietaryLifestyle}
-              onValueChange={setDietaryLifestyle}
-              mode="dropdown"
-            >
-              <Picker.Item label="Select your dietary lifestyle" value="" />
-              {dietaryOptions.map(opt => (
-                <Picker.Item key={opt} label={opt} value={opt} />
-              ))}
-            </Picker>
-          </View>
-
-          <Text style={styles.label}>Allergies</Text>
-          {allergyOptions.map((allergy) => (
-            <View key={allergy} style={styles.checkboxRow}>
-              <CustomCheckBox
-                checked={allergies.includes(allergy)}
-                onToggle={() => toggleAllergy(allergy)}
-              />
-              <Text style={styles.checkboxLabel}>{allergy}</Text>
+              <View style={styles.headerCenter}>
+                <Image
+                  source={require('../assets/personalize.png')} // header icon
+                  style={styles.headerIcon}
+                />
+                <Text style={styles.headerTitle}>Personalization</Text>
+              </View>
             </View>
-          ))}
 
-          <Text style={styles.label}>Religious/Cultural Dietary Practices</Text>
-          <View style={styles.pickerWrapper}>
-            <Picker
-              selectedValue={religiousPractice}
-              onValueChange={setReligiousPractice}
-              mode="dropdown"
-            >
-              <Picker.Item label="Select religious or cultural dietary practices" value="" />
-              {religiousOptions.map(opt => (
-                <Picker.Item key={opt} label={opt} value={opt} />
-              ))}
-            </Picker>
-          </View>
+            {/* Subtitle / instruction text */}
+            <Text style={styles.subtitle}>
+              You’re in control. Change your preferences anytime to keep your recipes fresh and relevant.
+            </Text>
 
-          <Text style={styles.label}>Calories-Based Diets</Text>
-          <View style={styles.pickerWrapper}>
-            <Picker
-              selectedValue={calorieGoal}
-              onValueChange={setCalorieGoal}
-              mode="dropdown"
-            >
-              <Picker.Item label="Select your calorie goal" value="" />
-              {calorieOptions.map(opt => (
-                <Picker.Item key={opt} label={opt} value={opt} />
+            {/* Section */}
+            <View style={styles.section}>
+              <Text style={styles.label}>Dietary Lifestyle</Text>
+              <View style={styles.pickerWrapper}>
+                <Picker
+                  selectedValue={dietaryLifestyle}
+                  onValueChange={setDietaryLifestyle}
+                  mode="dropdown"
+                >
+                  <Picker.Item label="Select your dietary lifestyle" value="" />
+                  {dietaryOptions.map((opt) => (
+                    <Picker.Item key={opt} label={opt} value={opt} />
+                  ))}
+                </Picker>
+              </View>
+
+              <Text style={styles.label}>Allergies</Text>
+              {allergyOptions.map((allergy) => (
+                <View key={allergy} style={styles.checkboxRow}>
+                  <CustomCheckBox
+                    checked={allergies.includes(allergy)}
+                    onToggle={() => toggleAllergy(allergy)}
+                  />
+                  <Text style={styles.checkboxLabel}>{allergy}</Text>
+                </View>
               ))}
-            </Picker>
+
+              <Text style={styles.label}>Religious/Cultural Dietary Practices</Text>
+              <View style={styles.pickerWrapper}>
+                <Picker
+                  selectedValue={religiousPractice}
+                  onValueChange={setReligiousPractice}
+                  mode="dropdown"
+                >
+                  <Picker.Item
+                    label="Select religious or cultural dietary practices"
+                    value=""
+                  />
+                  {religiousOptions.map((opt) => (
+                    <Picker.Item key={opt} label={opt} value={opt} />
+                  ))}
+                </Picker>
+              </View>
+
+              <Text style={styles.label}>Calories-Based Diets</Text>
+              <View style={styles.pickerWrapper}>
+                <Picker
+                  selectedValue={calorieGoal}
+                  onValueChange={setCalorieGoal}
+                  mode="dropdown"
+                >
+                  <Picker.Item label="Select your calorie goal" value="" />
+                  {calorieOptions.map((opt) => (
+                    <Picker.Item key={opt} label={opt} value={opt} />
+                  ))}
+                </Picker>
+              </View>
+            </View>
+          </ScrollView>
+
+          {/* Sticky Footer */}
+          <View style={styles.footer}>
+            <TouchableOpacity
+              style={[styles.saveButton, saving && styles.saveButtonDisabled]}
+              onPress={savePreferences}
+              disabled={saving}
+            >
+              {saving ? (
+                <ActivityIndicator color="white" />
+              ) : (
+                <Text style={styles.saveButtonText}>Save Changes</Text>
+              )}
+            </TouchableOpacity>
           </View>
         </View>
-
-        <TouchableOpacity 
-          style={[styles.saveButton, saving && styles.saveButtonDisabled]} 
-          onPress={savePreferences}
-          disabled={saving}
-        >
-          {saving ? (
-            <ActivityIndicator color="white" />
-          ) : (
-            <Text style={styles.saveButtonText}>Save Preferences</Text>
-          )}
-        </TouchableOpacity>
-
-        <TouchableOpacity 
-          style={styles.backButton}
-          onPress={() => navigation.goBack()}
-        >
-          <Text style={styles.backButtonText}>Back to Home</Text>
-        </TouchableOpacity>
-      </ScrollView>
-    </SafeAreaView>
+      </SafeAreaView>
+    </Background>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: 'transparent',
+  },
+  contentWrapper: {
+    flex: 1,
   },
   scrollContent: {
     padding: 20,
-    paddingBottom: 40,
+    paddingBottom: 100, 
   },
   loadingContainer: {
     flex: 1,
@@ -245,18 +256,43 @@ const styles = StyleSheet.create({
     marginTop: 10,
     color: '#666',
   },
-  header: {
-    marginBottom: 30,
+  topHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 10,
+    marginTop: 15, 
   },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
+  backButton: {
+    paddingRight: 15,
+  },
+  backIcon: {
+    width: 45,
+    height: 45,
+    resizeMode: 'contain',
+  },
+  headerCenter: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 40, 
+  },
+  headerIcon: {
+    width: 24,
+    height: 24,
+    marginRight: 8,
+    resizeMode: 'contain',
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: '600',
     color: '#333',
-    marginBottom: 5,
   },
   subtitle: {
-    fontSize: 16,
-    color: '#666',
+    fontSize: 14,
+    color: '#555',
+    marginBottom: 15,
+    textAlign: 'center',
   },
   section: {
     backgroundColor: 'white',
@@ -268,12 +304,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 20,
   },
   label: {
     fontWeight: '500',
@@ -288,29 +318,22 @@ const styles = StyleSheet.create({
     backgroundColor: '#f9f9f9',
     marginBottom: 8,
   },
+  footer: {
+    padding: 20,
+    borderTopWidth: 1,
+    borderColor: '#eee',
+  },
   saveButton: {
     backgroundColor: '#2196F3',
     borderRadius: 8,
     padding: 16,
     alignItems: 'center',
-    marginBottom: 16,
   },
   saveButtonDisabled: {
     backgroundColor: '#ccc',
   },
   saveButtonText: {
     color: 'white',
-    fontWeight: '600',
-    fontSize: 16,
-  },
-  backButton: {
-    backgroundColor: '#E3F2FD',
-    borderRadius: 8,
-    padding: 16,
-    alignItems: 'center',
-  },
-  backButtonText: {
-    color: '#2196F3',
     fontWeight: '600',
     fontSize: 16,
   },

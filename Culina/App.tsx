@@ -14,6 +14,8 @@ import Profile from './screens/profile';
 import SaveRecipe from './screens/saveRecipe';
 import RecipeDetail from './screens/RecipeDetail';
 
+import Permission from 'components/permission';
+
 import { StatusBar } from 'expo-status-bar';
 import { auth } from './utils/authPersistence';
 import { checkOnboardingStatus } from './utils/storage';
@@ -32,6 +34,7 @@ export type RootStackParamList = {
   Profile: undefined;
   SaveRecipe: undefined;
   RecipeDetail: { recipe: any };
+  Permission: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -84,6 +87,8 @@ export default function App() {
         <Stack.Screen name="Profile" component={Profile} />
         <Stack.Screen name="SaveRecipe" component={SaveRecipe} />
         <Stack.Screen name="RecipeDetail" component={RecipeDetail} />
+        
+        <Stack.Screen name="Permission" component={Permission} />
       </Stack.Navigator>
     </NavigationContainer>
   );

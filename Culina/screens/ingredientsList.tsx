@@ -147,8 +147,6 @@ const IngredientsList = ({ navigation }: Props) => {
     );
   };
 
-
-
   const filteredIngredients = ingredients.filter((ingredient) =>
     ingredient.name.toLowerCase().includes(searchText.toLowerCase())
   );
@@ -189,7 +187,10 @@ const IngredientsList = ({ navigation }: Props) => {
               value={searchText}
               onChangeText={setSearchText}
             />
-            <Image source={require("../assets/camera.png")} style={styles.icon} />
+            {/* Camera navigates to Permission */}
+            <TouchableOpacity onPress={() => navigation.navigate("Permission")}>
+              <Image source={require("../assets/camera.png")} style={styles.icon} />
+            </TouchableOpacity>
           </View>
 
           {/* Add Ingredient Button */}
