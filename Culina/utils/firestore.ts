@@ -11,6 +11,21 @@ export interface SavedRecipe {
   servings: number;
   userId: string;
   savedAt: Date;
+  shared?: boolean;
+}
+
+export interface SharedRecipe {
+  id: string;
+  title: string;
+  ingredients: string[];
+  instructions: string[];
+  cookingTime: string;
+  difficulty: string;
+  servings: number;
+  sharedBy: string;
+  sharedByUsername: string;
+  sharedAt: Date;
+  originalRecipeId: string;
 }
 
 export interface UserData {
@@ -246,5 +261,99 @@ export const saveRecipe = async (userId: string, recipe: Omit<SavedRecipe, 'id' 
   } catch (error) {
     console.error('Error saving recipe:', error);
     throw error;
+  }
+};
+
+// Shared recipe functions
+export const shareRecipe = async (userId: string, recipeId: string): Promise<void> => {
+  try {
+    // First, get the saved recipe
+    const savedRecipe = await getRecipeById(recipeId);
+    if (!savedRecipe) {
+      throw new Error('Recipe not found');
+    }
+
+    // Get user data for username
+    const userData = await getUserData(userId);
+    if (!userData) {
+      throw new Error('User data not found');
+    }
+
+    // Create shared recipe data
+    const sharedRecipeData: Omit<SharedRecipe, 'id'> = {
+      title: savedRecipe.title,
+      ingredients: savedRecipe.ingredients,
+      instructions: savedRecipe.instructions,
+      cookingTime: savedRecipe.cookingTime,
+      difficulty: savedRecipe.difficulty,
+      servings: savedRecipe.servings,
+      sharedBy: userId,
+      sharedByUsername: userData.username,
+      sharedAt: new Date(),
+      originalRecipeId: recipeId,
+    };
+
+    // Add to shared recipes collection
+    const sharedRecipesRef = collection(db, 'sharedRecipes');
+    await setDoc(doc(sharedRecipesRef), sharedRecipeData);
+
+    // Mark the recipe as shared in user's saved recipes
+    const userRef = doc(db, 'users', userId);
+    const userSnap = await getDoc(userRef);
+
+    if (userSnap.exists()) {
+      const userData = userSnap.data();
+      const existingRecipes = userData.recipes || [];
+      const recipeIndex = existingRecipes.findIndex((rec: SavedRecipe) => rec.id === recipeId);
+
+      if (recipeIndex >= 0) {
+        existingRecipes[recipeIndex].shared = true;
+        await updateDoc(userRef, {
+          recipes: existingRecipes,
+          updatedAt: new Date(),
+        });
+      }
+    }
+  } catch (error) {
+    console.error('Error sharing recipe:', error);
+    throw error;
+  }
+};
+
+export const getSharedRecipes = async (): Promise<SharedRecipe[]> => {
+  try {
+    const sharedRecipesRef = collection(db, 'sharedRecipes');
+    const q = query(sharedRecipesRef, where('sharedAt', '!=', null));
+    const querySnapshot = await getDocs(q);
+
+    const sharedRecipes: SharedRecipe[] = [];
+    querySnapshot.forEach((doc) => {
+      const data = doc.data();
+      sharedRecipes.push({
+        id: doc.id,
+        ...data,
+        sharedAt: data.sharedAt.toDate(),
+      } as SharedRecipe);
+    });
+
+    // Sort by sharedAt descending (most recent first)
+    return sharedRecipes.sort((a, b) => b.sharedAt.getTime() - a.sharedAt.getTime());
+  } catch (error) {
+    console.error('Error fetching shared recipes:', error);
+    throw error;
+  }
+};
+
+export const isRecipeSaved = async (userId: string, recipe: any): Promise<boolean> => {
+  try {
+    const userRecipes = await getUserRecipes(userId);
+    // Check if a recipe with the same title and ingredients exists
+    return userRecipes.some(savedRecipe =>
+      savedRecipe.title === recipe.title &&
+      JSON.stringify(savedRecipe.ingredients) === JSON.stringify(recipe.ingredients)
+    );
+  } catch (error) {
+    console.error('Error checking if recipe is saved:', error);
+    return false;
   }
 };

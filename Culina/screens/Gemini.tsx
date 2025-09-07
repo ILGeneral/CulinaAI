@@ -216,6 +216,8 @@ const GeminiChat = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: "#f5f5f5",
+    paddingBottom: 100,
   },
   keyboardAvoidingView: {
     flex: 1,
@@ -226,8 +228,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: "transparent", 
-    borderBottomWidth: 0, 
+    backgroundColor: "transparent",
+    borderBottomWidth: 0,
     zIndex: 1,
     paddingTop: 24,
   },

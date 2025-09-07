@@ -20,7 +20,7 @@ import { updateUserData } from '../utils/firestore';
 import CustomCheckBox from '../components/customCheckBox';
 import type { RootStackParamList } from '../App';
 
-import Background from 'components/background';
+import Background from '../components/background';
 
 const dietaryOptions = [
   'None',
@@ -245,7 +245,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: 20,
-    paddingBottom: 100, 
+    paddingBottom: 100,
   },
   loadingContainer: {
     flex: 1,
@@ -260,7 +260,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 10,
-    marginTop: 15, 
+    marginTop: 15,
   },
   backButton: {
     paddingRight: 15,
@@ -275,7 +275,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 40, 
+    marginRight: 40,
   },
   headerIcon: {
     width: 24,

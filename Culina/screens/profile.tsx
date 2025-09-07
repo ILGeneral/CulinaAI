@@ -112,7 +112,7 @@ const styles = StyleSheet.create({
   },
   backIcon: { width: 45, height: 45 },
   headerTitle: { fontSize: 20, fontWeight: 'bold' },
-  content: { flexGrow: 1, paddingHorizontal: 16, paddingBottom: 32 },
+  content: { flexGrow: 1, paddingHorizontal: 16, paddingBottom: 100 },
   profilePicWrapper: { alignItems: 'center', marginVertical: 24 },
   profilePic: { width: 80, height: 80, borderRadius: 40, marginBottom: 8, backgroundColor: '#e5e7eb' },
   profileName: { fontSize: 18, fontWeight: '600' },

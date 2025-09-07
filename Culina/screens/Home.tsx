@@ -16,9 +16,8 @@ import { RootStackParamList } from "../App";
 
 import Background from "../components/background";
 import CustomBottomBar from "../components/customBottomBar";
-import RecipeCard from "components/recipeCard";
-import { fetchRecipes } from "components/backendDapat2";
-import ProfileScreen from "./profile";
+import RecipeShowcase from "../components/recipeShowcase";
+import ProfileScreen from './profile'
 import { auth } from "../utils/authPersistence";
 import { getUserRecipes, SavedRecipe } from "../utils/firestore";
 import { User } from "firebase/auth";
@@ -26,14 +25,9 @@ import { User } from "firebase/auth";
 type Props = NativeStackScreenProps<RootStackParamList, "Home">;
 
 const Home = ({ navigation }: Props) => {
-  const [recipes, setRecipes] = useState<any>(null);
   const [savedRecipes, setSavedRecipes] = useState<SavedRecipe[]>([]);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [loadingSaved, setLoadingSaved] = useState(false);
-
-  useEffect(() => {
-    fetchRecipes().then(setRecipes);
-  }, []);
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged((user) => {
@@ -58,14 +52,6 @@ const Home = ({ navigation }: Props) => {
       setLoadingSaved(false);
     }
   };
-
-  if (!recipes) {
-    return (
-      <Background>
-        <Text style={{ marginTop: 50, textAlign: "center" }}>Loading...</Text>
-      </Background>
-    );
-  }
 
   return (
     <SafeAreaView style={{ flex: 1 }}>
@@ -125,8 +111,8 @@ const Home = ({ navigation }: Props) => {
               <FlatList
                 data={savedRecipes.slice(0, 5)} // Show only first 5 saved recipes
                 horizontal
-                keyExtractor={(item) => item.id}
-                renderItem={({ item }) => (
+                keyExtractor={(item: SavedRecipe) => item.id}
+                renderItem={({ item }: { item: SavedRecipe }) => (
                   <TouchableOpacity
                     style={styles.savedRecipeCard}
                     onPress={() =>
@@ -154,51 +140,10 @@ const Home = ({ navigation }: Props) => {
             </View>
           )}
 
-          {/* Recently Generated Recipes */}
-          <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Recently Generated Recipe</Text>
-              <Text style={styles.seeAll}>See All</Text>
-            </View>
-            <FlatList
-              data={recipes.recentlyGenerated}
-              horizontal
-              keyExtractor={(item) => item.id}
-              renderItem={({ item }) => (
-                <RecipeCard
-                  recipe={item}
-                  onPress={() =>
-                    navigation.navigate("RecipeDetail", { recipe: item })
-                  }
-                />
-              )}
-              showsHorizontalScrollIndicator={false}
-            />
-          </View>
-
-          {/* Community Shared Recipes */}
-          <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>
-                Top Community-Shared Recipes
-              </Text>
-              <Text style={styles.seeAll}>See All</Text>
-            </View>
-            <FlatList
-              data={recipes.communityShared}
-              horizontal
-              keyExtractor={(item) => item.id}
-              renderItem={({ item }) => (
-                <RecipeCard
-                  recipe={item}
-                  onPress={() =>
-                    navigation.navigate("RecipeDetail", { recipe: item })
-                  }
-                />
-              )}
-              showsHorizontalScrollIndicator={false}
-            />
-          </View>
+          {/* Recipe Showcase Component */}
+          <RecipeShowcase
+            onRecipePress={(recipe) => navigation.navigate("RecipeDetail", { recipe })}
+          />
         </ScrollView>
 
         {/* Floating Bottom Bar */}

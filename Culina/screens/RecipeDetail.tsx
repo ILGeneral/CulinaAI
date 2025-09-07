@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -12,7 +12,7 @@ import {
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "../App";
 import { auth } from "../utils/authPersistence";
-import { saveRecipe } from "../utils/firestore";
+import { saveRecipe, shareRecipe, isRecipeSaved, getUserRecipes } from "../utils/firestore";
 import { User } from "firebase/auth";
 import Background from "../components/background";
 import CustomBottomBar from "../components/customBottomBar";
@@ -31,6 +31,18 @@ interface Recipe {
 const RecipeDetail = ({ navigation, route }: Props) => {
   const { recipe } = route.params;
   const currentUser = auth.currentUser;
+  const [isSaved, setIsSaved] = useState(false);
+  const [isShared, setIsShared] = useState(false);
+
+  useEffect(() => {
+    const checkIfRecipeIsSaved = async () => {
+      if (currentUser) {
+        const saved = await isRecipeSaved(currentUser.uid, recipe);
+        setIsSaved(saved);
+      }
+    };
+    checkIfRecipeIsSaved();
+  }, [currentUser, recipe]);
 
   const handleSaveRecipe = async () => {
     if (!currentUser) {
@@ -40,10 +52,44 @@ const RecipeDetail = ({ navigation, route }: Props) => {
 
     try {
       await saveRecipe(currentUser.uid, recipe);
+      setIsSaved(true);
       Alert.alert("Success", "Recipe saved successfully!");
     } catch (error: any) {
       console.error("Error saving recipe:", error);
       Alert.alert("Error", "Failed to save recipe. Please try again.");
+    }
+  };
+
+  const handleShareRecipe = async () => {
+    if (!currentUser) {
+      Alert.alert("Error", "You must be logged in to share recipes.");
+      return;
+    }
+
+    if (!isSaved) {
+      Alert.alert("Error", "You must save the recipe first before sharing.");
+      return;
+    }
+
+    try {
+      // For now, we'll need to get the recipe ID from the saved recipes
+      // This is a simplified approach - in a real app, you'd pass the recipe ID
+      const userRecipes = await getUserRecipes(currentUser.uid);
+      const savedRecipe = userRecipes.find(r =>
+        r.title === recipe.title &&
+        JSON.stringify(r.ingredients) === JSON.stringify(recipe.ingredients)
+      );
+
+      if (savedRecipe) {
+        await shareRecipe(currentUser.uid, savedRecipe.id);
+        setIsShared(true);
+        Alert.alert("Success", "Recipe shared successfully!");
+      } else {
+        Alert.alert("Error", "Could not find saved recipe to share.");
+      }
+    } catch (error: any) {
+      console.error("Error sharing recipe:", error);
+      Alert.alert("Error", "Failed to share recipe. Please try again.");
     }
   };
 
@@ -107,13 +153,26 @@ const RecipeDetail = ({ navigation, route }: Props) => {
             }
           })}
 
-          {/* Save Recipe Button */}
-          <TouchableOpacity
-            style={[styles.button, styles.saveButton]}
-            onPress={handleSaveRecipe}
-          >
-            <Text style={styles.buttonText}>Save Recipe</Text>
-          </TouchableOpacity>
+          {/* Action Buttons */}
+          {!isSaved ? (
+            <TouchableOpacity
+              style={[styles.button, styles.saveButton]}
+              onPress={handleSaveRecipe}
+            >
+              <Text style={styles.buttonText}>Save Recipe</Text>
+            </TouchableOpacity>
+          ) : (
+            <View style={styles.buttonContainer}>
+              <TouchableOpacity
+                style={[styles.button, styles.shareButton]}
+                onPress={handleShareRecipe}
+              >
+                <Text style={styles.buttonText}>
+                  {isShared ? "Shared ✓" : "Share Recipe"}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          )}
         </ScrollView>
 
         <CustomBottomBar />
@@ -202,6 +261,12 @@ const styles = StyleSheet.create({
   },
   saveButton: {
     backgroundColor: "#4CAF50",
+  },
+  shareButton: {
+    backgroundColor: "#2196F3",
+  },
+  buttonContainer: {
+    marginTop: 20,
   },
   buttonText: {
     color: "#fff",
