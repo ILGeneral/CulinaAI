@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, FlatList, StyleSheet, TouchableOpacity, Image } from 'react-native';
+import { View, Text, FlatList, StyleSheet, TouchableOpacity, Image, Dimensions } from 'react-native';
 import { getSharedRecipes, SharedRecipe } from '../utils/firestore';
+import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
+import { db } from '../firebaseConfig';
 
 interface Recipe {
   id: string;
@@ -21,22 +23,34 @@ const RecipeShowcase: React.FC<RecipeShowcaseProps> = ({ onRecipePress }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchRecipes();
-  }, []);
+    // Set up real-time listener for shared recipes
+    const sharedRecipesRef = collection(db, 'sharedRecipes');
+    const q = query(sharedRecipesRef, orderBy('sharedAt', 'desc'));
 
-  const fetchRecipes = async () => {
-    try {
-      const sharedRecipes = await getSharedRecipes();
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+      const sharedRecipes: SharedRecipe[] = [];
+      querySnapshot.forEach((doc) => {
+        const data = doc.data();
+        sharedRecipes.push({
+          id: doc.id,
+          ...data,
+          sharedAt: data.sharedAt.toDate(),
+        } as SharedRecipe);
+      });
+
       setRecentlyGenerated([]);
       setCommunityShared(sharedRecipes.slice(0, 10));
-    } catch (error) {
-      console.error('Error fetching recipes:', error);
+      setLoading(false);
+    }, (error) => {
+      console.error('Error listening to shared recipes:', error);
       setRecentlyGenerated([]);
       setCommunityShared([]);
-    } finally {
       setLoading(false);
-    }
-  };
+    });
+
+    // Cleanup listener on unmount
+    return () => unsubscribe();
+  }, []);
 
   const renderRecipeItem = ({ item }: { item: Recipe }) => (
     <TouchableOpacity
@@ -75,6 +89,8 @@ const RecipeShowcase: React.FC<RecipeShowcaseProps> = ({ onRecipePress }) => {
       </View>
     </TouchableOpacity>
   );
+
+
 
   if (loading) {
     return (
@@ -119,28 +135,35 @@ const RecipeShowcase: React.FC<RecipeShowcaseProps> = ({ onRecipePress }) => {
   );
 };
 
+const { width: screenWidth } = Dimensions.get('window');
+const cardWidth = (screenWidth - 16 * 2 - 12 * 2) / 2.2; // Dynamic width based on screen size
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
   },
   section: {
-    marginBottom: 24,
+    marginBottom: 20,
   },
   sectionTitle: {
     fontSize: 20,
     fontWeight: 'bold',
     color: '#333',
     marginBottom: 12,
+    paddingHorizontal: 4,
   },
   listContainer: {
     paddingHorizontal: 4,
+    paddingVertical: 8,
   },
   recipeCard: {
     backgroundColor: '#fff',
     borderRadius: 12,
     marginRight: 12,
-    width: 200,
+    width: cardWidth,
+    minHeight: 200,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
@@ -149,32 +172,36 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 3.84,
     elevation: 5,
+    overflow: 'hidden',
   },
   recipeImage: {
     width: '100%',
-    height: 120,
+    height: 100,
     borderTopLeftRadius: 12,
     borderTopRightRadius: 12,
   },
   recipeInfo: {
-    padding: 12,
+    padding: 10,
+    flex: 1,
+    justifyContent: 'space-between',
   },
   recipeTitle: {
     fontSize: 14,
     fontWeight: '600',
     color: '#333',
-    marginBottom: 8,
+    marginBottom: 6,
     lineHeight: 18,
   },
   recipeMeta: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+    gap: 4,
   },
   metaText: {
     fontSize: 10,
     color: '#666',
     fontWeight: '500',
+    flexShrink: 1,
   },
   emptyText: {
     fontSize: 14,

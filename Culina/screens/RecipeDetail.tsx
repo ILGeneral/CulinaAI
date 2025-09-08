@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -7,11 +7,15 @@ import {
   ScrollView,
   SafeAreaView,
   Image,
+  Alert,
 } from "react-native";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "../App";
 import Background from "../components/background";
 import CustomBottomBar from "../components/customBottomBar";
+import { auth } from "../utils/authPersistence";
+import { saveRecipe, isRecipeSaved, shareRecipeDirectly } from "../utils/firestore";
+import { User } from "firebase/auth";
 
 type Props = NativeStackScreenProps<RootStackParamList, "RecipeDetail">;
 
@@ -28,12 +32,86 @@ interface Recipe {
 
 const RecipeDetail = ({ navigation, route }: Props) => {
   const { recipe } = route.params;
+  const [isSaved, setIsSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+
+  useEffect(() => {
+    const unsubscribe = auth.onAuthStateChanged(async (user) => {
+      setCurrentUser(user);
+      if (user) {
+        // Check if recipe is already saved
+        const saved = await isRecipeSaved(user.uid, recipe);
+        setIsSaved(saved);
+      }
+    });
+    return unsubscribe;
+  }, [recipe]);
+
+  const handleSaveRecipe = async () => {
+    if (!currentUser) {
+      Alert.alert("Error", "You must be logged in to save recipes");
+      return;
+    }
+
+    if (isSaved) {
+      Alert.alert("Already Saved", "This recipe is already in your saved recipes");
+      return;
+    }
+
+    setSaving(true);
+    try {
+      await saveRecipe(currentUser.uid, {
+        title: recipe.title,
+        ingredients: recipe.ingredients,
+        instructions: recipe.instructions,
+        cookingTime: recipe.cookingTime,
+        difficulty: recipe.difficulty,
+        servings: recipe.servings,
+        estimatedKcal: recipe.estimatedKcal,
+      });
+      setIsSaved(true);
+      Alert.alert("Success", "Recipe saved successfully!");
+    } catch (error) {
+      console.error("Error saving recipe:", error);
+      Alert.alert("Error", "Failed to save recipe. Please try again.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleShareRecipe = async () => {
+    if (!currentUser) {
+      Alert.alert("Error", "You must be logged in to share recipes");
+      return;
+    }
+
+    try {
+      // Save the recipe to the shared recipes collection
+      await shareRecipeDirectly(currentUser.uid, {
+        title: recipe.title,
+        ingredients: recipe.ingredients,
+        instructions: recipe.instructions,
+        cookingTime: recipe.cookingTime,
+        difficulty: recipe.difficulty,
+        servings: recipe.servings,
+        estimatedKcal: recipe.estimatedKcal,
+      });
+
+      Alert.alert("Success!", "Thanks for sharing!");
+    } catch (error) {
+      console.error("Error sharing recipe:", error);
+      Alert.alert("Error", "Failed to share recipe. Please try again.");
+    }
+  };
+
+
 
   return (
     <Background>
       <SafeAreaView style={{ flex: 1 }}>
         <ScrollView contentContainerStyle={styles.container}>
-          {/* Header: Back button and CULINA title */}
+          {/* Header: Back button, CULINA title, Share button, and Save button */}
           <View style={styles.headerContainer}>
             <TouchableOpacity onPress={() => navigation.goBack()}>
               <Image
@@ -43,6 +121,37 @@ const RecipeDetail = ({ navigation, route }: Props) => {
               />
             </TouchableOpacity>
             <Text style={styles.headerTitle}>CULINA</Text>
+            <View style={styles.headerButtons}>
+              <TouchableOpacity
+                style={styles.shareButton}
+                onPress={handleShareRecipe}
+              >
+                <Text style={styles.shareButtonText}>share</Text>
+              </TouchableOpacity>
+              {currentUser && (
+                <TouchableOpacity
+                  style={[styles.saveButton, isSaved && styles.saveButtonSaved]}
+                  onPress={handleSaveRecipe}
+                  disabled={saving || isSaved}
+                >
+                  {saving ? (
+                    <Text style={[styles.saveButtonText, isSaved && styles.saveButtonTextSaved]}>
+                      ...
+                    </Text>
+                  ) : isSaved ? (
+                    <Text style={[styles.saveButtonText, isSaved && styles.saveButtonTextSaved]}>
+                      ✓
+                    </Text>
+                  ) : (
+                    <Image
+                      source={require("../assets/heart.png")}
+                      style={styles.saveIcon}
+                      resizeMode="contain"
+                    />
+                  )}
+                </TouchableOpacity>
+              )}
+            </View>
           </View>
 
           {/* Recipe Title */}
@@ -51,7 +160,7 @@ const RecipeDetail = ({ navigation, route }: Props) => {
           {/* Recipe Meta */}
           <View style={styles.recipeMeta}>
             <Text style={styles.metaText}>⏱️ {recipe.cookingTime}</Text>
-            <Text style={styles.metaText}>🎯 {recipe.difficulty}</Text>
+            <Text style={styles.metaText}>🥕 {recipe.ingredients.length} ingredients</Text>
             <Text style={styles.metaText}>👥 Serves {recipe.servings}</Text>
             {recipe.estimatedKcal && (
               <Text style={styles.metaText}>🔥 {recipe.estimatedKcal}</Text>
@@ -176,6 +285,51 @@ const styles = StyleSheet.create({
     color: "#444",
     lineHeight: 22,
     flex: 1,
+  },
+  saveButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "#42A5F5",
+    justifyContent: "center",
+    alignItems: "center",
+    marginLeft: 10,
+  },
+  saveButtonSaved: {
+    backgroundColor: "#4CAF50",
+  },
+  saveButtonText: {
+    fontSize: 18,
+    color: "#fff",
+    fontWeight: "bold",
+  },
+  saveButtonTextSaved: {
+    color: "#fff",
+  },
+  saveIcon: {
+    width: 20,
+    height: 20,
+  },
+  headerButtons: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  shareButton: {
+    width: 60,
+    height: 40,
+    borderRadius: 8,
+    backgroundColor: "#42A5F5",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 10,
+  },
+  shareIcon: {
+    width: 20,
+    height: 20,
+  },
+  shareButtonText: {
+    fontSize: 18,
+    color: "#fff",
   },
 
 });

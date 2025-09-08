@@ -348,6 +348,46 @@ export const shareRecipe = async (userId: string, recipeId: string): Promise<voi
   }
 };
 
+export const shareRecipeDirectly = async (userId: string, recipe: {
+  title: string;
+  ingredients: string[];
+  instructions: string[];
+  cookingTime: string;
+  difficulty: string;
+  servings: number;
+  estimatedKcal?: string;
+}): Promise<void> => {
+  try {
+    // Get user data for username
+    const userData = await getUserData(userId);
+    if (!userData) {
+      throw new Error('User data not found');
+    }
+
+    // Create shared recipe data
+    const sharedRecipeData: Omit<SharedRecipe, 'id'> = {
+      title: recipe.title,
+      ingredients: recipe.ingredients,
+      instructions: recipe.instructions,
+      cookingTime: recipe.cookingTime,
+      difficulty: recipe.difficulty,
+      servings: recipe.servings,
+      estimatedKcal: recipe.estimatedKcal,
+      sharedBy: userId,
+      sharedByUsername: userData.username,
+      sharedAt: new Date(),
+      originalRecipeId: '', // Empty since this is not from a saved recipe
+    };
+
+    // Add to shared recipes collection
+    const sharedRecipesRef = collection(db, 'sharedRecipes');
+    await setDoc(doc(sharedRecipesRef), sharedRecipeData);
+  } catch (error) {
+    console.error('Error sharing recipe directly:', error);
+    throw error;
+  }
+};
+
 export const getSharedRecipes = async (): Promise<SharedRecipe[]> => {
   try {
     const sharedRecipesRef = collection(db, 'sharedRecipes');

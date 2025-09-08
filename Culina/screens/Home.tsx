@@ -27,6 +27,7 @@ type Props = NativeStackScreenProps<RootStackParamList, "Home">;
 
 const Home = ({ navigation }: Props) => {
   const [savedRecipes, setSavedRecipes] = useState<SavedRecipe[]>([]);
+
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [loadingSaved, setLoadingSaved] = useState(false);
 
@@ -46,7 +47,7 @@ const Home = ({ navigation }: Props) => {
     try {
       setLoadingSaved(true);
       const userRecipes = await getUserRecipes(userId);
-      setSavedRecipes(userRecipes);
+      setSavedRecipes(userRecipes.reverse());
     } catch (error) {
       console.error("Error fetching saved recipes:", error);
     } finally {
@@ -159,7 +160,7 @@ const Home = ({ navigation }: Props) => {
                             ⏱️ {item.cookingTime}
                           </Text>
                           <Text style={styles.savedMetaText}>
-                            🎯 {item.difficulty}
+                            🥕 {item.ingredients.length} ingredients
                           </Text>
                   <Text style={styles.savedMetaText}>
                     👥 Serves {item.servings}
@@ -184,6 +185,8 @@ const Home = ({ navigation }: Props) => {
       />
     </View>
   )}
+
+
 
           {/* Recipe Showcase Component */}
           <RecipeShowcase
@@ -310,6 +313,7 @@ const styles = StyleSheet.create({
     fontWeight: "500",
     flexShrink: 1,
   },
+
 });
 
 export default Home;

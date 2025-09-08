@@ -29,7 +29,6 @@ interface Recipe {
   ingredients: string[];
   instructions: string[];
   cookingTime: string;
-  difficulty: string;
   servings: number;
   estimatedKcal?: string;
 }
@@ -148,7 +147,6 @@ const RecipeGenerator = ({ navigation }: Props) => {
               "Step 5: Bake for 25-30 minutes until golden brown"
             ],
             "cookingTime": "XX minutes/hours and minutes",
-            "difficulty": "Easy/Medium/Hard",
             "servings": X,
             "estimatedKcal": "X kcal"
           },
@@ -399,27 +397,34 @@ const uiStyles = StyleSheet.create({
   recipeContainer: {
     backgroundColor: "white",
     borderRadius: 12,
-    padding: 20,
+    padding: 16,
     marginBottom: 20,
     shadowColor: "#000",
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
+    minHeight: 120,
+    flexDirection: "column",
+    justifyContent: "space-between",
   },
   recipeTitle: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: "bold",
     color: "#333",
-    marginBottom: 16,
+    marginBottom: 12,
     textAlign: "center",
+    flexShrink: 1,
   },
   recipeMeta: {
     flexDirection: "row",
-    justifyContent: "space-around",
-    marginBottom: 12,
-    padding: 12,
+    flexWrap: "wrap",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 8,
+    padding: 10,
     backgroundColor: "#f8f9fa",
     borderRadius: 8,
+    gap: 4,
   },
   metaText: {
     fontSize: 14,
