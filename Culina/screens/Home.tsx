@@ -9,6 +9,7 @@ import {
   ScrollView,
   TouchableOpacity,
   SafeAreaView,
+  Alert,
 } from "react-native";
 
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
@@ -19,7 +20,7 @@ import CustomBottomBar from "../components/customBottomBar";
 import RecipeShowcase from "../components/recipeShowcase";
 import ProfileScreen from './profile'
 import { auth } from "../utils/authPersistence";
-import { getUserRecipes, SavedRecipe } from "../utils/firestore";
+import { getUserRecipes, SavedRecipe, deleteSavedRecipe } from "../utils/firestore";
 import { User } from "firebase/auth";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Home">;
@@ -51,6 +52,35 @@ const Home = ({ navigation }: Props) => {
     } finally {
       setLoadingSaved(false);
     }
+  };
+
+  const handleUnsaveRecipe = async (recipeId: string, recipeTitle: string) => {
+    if (!currentUser) return;
+
+    Alert.alert(
+      "Delete Saved Recipe",
+      `Are you sure you want to delete "${recipeTitle}" from your saved recipes?`,
+      [
+        {
+          text: "Cancel",
+          style: "cancel",
+        },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await deleteSavedRecipe(currentUser.uid, recipeId);
+              // Update local state by filtering out the deleted recipe
+              setSavedRecipes(prev => prev.filter(recipe => recipe.id !== recipeId));
+            } catch (error) {
+              console.error("Error unsaving recipe:", error);
+              Alert.alert("Error", "Failed to delete the recipe. Please try again.");
+            }
+          },
+        },
+      ]
+    );
   };
 
   return (
@@ -113,32 +143,47 @@ const Home = ({ navigation }: Props) => {
                 horizontal
                 keyExtractor={(item: SavedRecipe) => item.id}
                 renderItem={({ item }: { item: SavedRecipe }) => (
-                  <TouchableOpacity
-                    style={styles.savedRecipeCard}
-                    onPress={() =>
-                      navigation.navigate("RecipeDetail", { recipe: item })
-                    }
-                  >
-                    <Text style={styles.savedRecipeTitle} numberOfLines={2}>
-                      {item.title}
+                  <View style={styles.savedRecipeCardContainer}>
+                    <View style={styles.savedRecipeCard}>
+                      <TouchableOpacity
+                        style={styles.cardContent}
+                        onPress={() =>
+                          navigation.navigate("RecipeDetail", { recipe: item })
+                        }
+                      >
+                        <Text style={styles.savedRecipeTitle} numberOfLines={2}>
+                          {item.title}
+                        </Text>
+                        <View style={styles.savedRecipeMeta}>
+                          <Text style={styles.savedMetaText}>
+                            ⏱️ {item.cookingTime}
+                          </Text>
+                          <Text style={styles.savedMetaText}>
+                            🎯 {item.difficulty}
+                          </Text>
+                  <Text style={styles.savedMetaText}>
+                    👥 Serves {item.servings}
+                  </Text>
+                  {item.estimatedKcal && (
+                    <Text style={styles.savedMetaText}>
+                      🔥 {item.estimatedKcal} kcal
                     </Text>
-                    <View style={styles.savedRecipeMeta}>
-                      <Text style={styles.savedMetaText}>
-                        ⏱️ {item.cookingTime}
-                      </Text>
-                      <Text style={styles.savedMetaText}>
-                        🎯 {item.difficulty}
-                      </Text>
-                      <Text style={styles.savedMetaText}>
-                        👥 Serves {item.servings}
-                      </Text>
+                  )}
+                </View>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={styles.unsaveButton}
+                        onPress={() => handleUnsaveRecipe(item.id, item.title)}
+                      >
+                        <Text style={styles.unsaveButtonText}>✕</Text>
+                      </TouchableOpacity>
                     </View>
-                  </TouchableOpacity>
+                  </View>
                 )}
-                showsHorizontalScrollIndicator={false}
-              />
-            </View>
-          )}
+        showsHorizontalScrollIndicator={false}
+      />
+    </View>
+  )}
 
           {/* Recipe Showcase Component */}
           <RecipeShowcase
@@ -208,31 +253,62 @@ const styles = StyleSheet.create({
   },
   sectionTitle: { fontSize: 16, fontWeight: "700" },
   seeAll: { fontSize: 14, color: "#42A5F5", fontWeight: "600" },
+  savedRecipeCardContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginRight: 12,
+  },
   savedRecipeCard: {
     backgroundColor: "#fff",
     borderRadius: 12,
     padding: 16,
-    marginRight: 12,
-    width: 200,
+    minWidth: 200,
+    maxWidth: 300,
     shadowColor: "#000",
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
+    flex: 1,
+    position: "relative",
+  },
+  cardContent: {
+    flex: 1,
+  },
+  unsaveButton: {
+    position: "absolute",
+    top: 8,
+    right: 8,
+    backgroundColor: "#ff4d4d",
+    borderRadius: 12,
+    width: 24,
+    height: 24,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  unsaveButtonText: {
+    color: "#fff",
+    fontWeight: "bold",
+    fontSize: 16,
+    lineHeight: 16,
   },
   savedRecipeTitle: {
     fontSize: 16,
     fontWeight: "bold",
     color: "#333",
     marginBottom: 8,
+    flexWrap: "wrap",
   },
   savedRecipeMeta: {
     flexDirection: "row",
-    justifyContent: "space-between",
+    flexWrap: "wrap",
+    justifyContent: "flex-start",
+    gap: 8,
   },
   savedMetaText: {
     fontSize: 12,
     color: "#666",
     fontWeight: "500",
+    flexShrink: 1,
   },
 });
 

@@ -12,58 +12,60 @@ import {
 } from "react-native";
 import Background from "../components/background";
 import CustomBottomBar from "../components/customBottomBar";
+import { auth } from "../utils/authPersistence";
+import { getUserRecipes, SavedRecipe, deleteSavedRecipe } from "../utils/firestore";
+import { User } from "firebase/auth";
 
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "../App";
 
 type Props = NativeStackScreenProps<RootStackParamList, "SaveRecipe">;
 
-interface Recipe {
-  id: string;
-  title: string;
-  image: string;
-  cookingTime: string;
-  calories: string;
-  ingredientsCount: number;
-}
+
 
 const SaveRecipe = ({ navigation }: Props) => {
-  const [recipes, setRecipes] = useState<Recipe[]>([]);
+  const [savedRecipes, setSavedRecipes] = useState<SavedRecipe[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchText, setSearchText] = useState("");
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
 
   useEffect(() => {
-    const fetchRecipes = async () => {
-      try {
-        const response: Recipe[] = [
-          {
-            id: "1",
-            title: "Double cheeseburger with grilled beef patties cheese lettuce leaf burger buns",
-            image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRC2R7IqQ73E-NUscaXalW0osiz_muqQ52WGA&s",
-            cookingTime: "24 mins",
-            calories: "755 kcal",
-            ingredientsCount: 12,
-          },
-          {
-            id: "2",
-            title: "Tonkatsu (Japanese Pork Cutlet)",
-            image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSWBxI6_5VzKn8y1TCsNYlnyWX7FQHFxsrq9A&s",
-            cookingTime: "30 mins",
-            calories: "500 kcal",
-            ingredientsCount: 9,
-          },
-        ];
-        setRecipes(response);
-      } catch (error) {
-        console.error(error);
-      } finally {
+    const unsubscribe = auth.onAuthStateChanged((user) => {
+      setCurrentUser(user);
+      if (user) {
+        fetchSavedRecipes(user.uid);
+      } else {
+        setSavedRecipes([]);
         setLoading(false);
       }
-    };
-    fetchRecipes();
+    });
+    return unsubscribe;
   }, []);
 
-  const filteredRecipes = recipes.filter((recipe) =>
+  const fetchSavedRecipes = async (userId: string) => {
+    try {
+      const userRecipes = await getUserRecipes(userId);
+      setSavedRecipes(userRecipes);
+    } catch (error) {
+      console.error("Error fetching saved recipes:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleUnsaveRecipe = async (recipeId: string) => {
+    if (!currentUser) return;
+
+    try {
+      await deleteSavedRecipe(currentUser.uid, recipeId);
+      // Update local state by filtering out the deleted recipe
+      setSavedRecipes(prev => prev.filter(recipe => recipe.id !== recipeId));
+    } catch (error) {
+      console.error("Error unsaving recipe:", error);
+    }
+  };
+
+  const filteredRecipes = savedRecipes.filter((recipe) =>
     recipe.title.toLowerCase().includes(searchText.toLowerCase())
   );
 
@@ -111,8 +113,12 @@ const SaveRecipe = ({ navigation }: Props) => {
             data={filteredRecipes}
             keyExtractor={(item) => item.id}
             renderItem={({ item }) => (
-              <View style={styles.recipeCard}>
-                <Image source={{ uri: item.image }} style={styles.recipeImage} />
+              <TouchableOpacity
+                style={styles.recipeCard}
+                onPress={() => navigation.navigate("RecipeDetail", { recipe: item })}
+                activeOpacity={0.7}
+              >
+                <Image source={{ uri: "https://via.placeholder.com/80" }} style={styles.recipeImage} />
                 <View style={styles.recipeInfo}>
                   <Text style={styles.recipeTitle} numberOfLines={2}>
                     {item.title}
@@ -124,15 +130,21 @@ const SaveRecipe = ({ navigation }: Props) => {
                     </View>
                     <View style={styles.metaItem}>
                       <Image source={require("../assets/kcal.png")} style={styles.metaIcon} />
-                      <Text style={styles.metaText}>{item.calories}</Text>
+                      <Text style={styles.metaText}>{item.estimatedKcal || "N/A"}</Text>
                     </View>
                     <View style={styles.metaItem}>
                       <Image source={require("../assets/ingr.png")} style={styles.metaIcon} />
-                      <Text style={styles.metaText}>{item.ingredientsCount} ingredients</Text>
+                      <Text style={styles.metaText}>{item.ingredients?.length || 0} ingredients</Text>
                     </View>
                   </View>
                 </View>
-              </View>
+                <TouchableOpacity
+                  style={styles.unsaveButton}
+                  onPress={() => handleUnsaveRecipe(item.id)}
+                >
+                  <Text style={styles.unsaveButtonText}>✕</Text>
+                </TouchableOpacity>
+              </TouchableOpacity>
             )}
           />
         </View>
@@ -225,6 +237,22 @@ const styles = StyleSheet.create({
   metaText: {
     fontSize: 12,
     color: "#666",
+  },
+  unsaveButton: {
+    position: "absolute",
+    top: 8,
+    right: 8,
+    backgroundColor: "#ff4444",
+    borderRadius: 12,
+    width: 24,
+    height: 24,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  unsaveButtonText: {
+    color: "#fff",
+    fontSize: 14,
+    fontWeight: "bold",
   },
 });
 

@@ -1,19 +1,15 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 import {
   View,
   Text,
   TouchableOpacity,
   StyleSheet,
   ScrollView,
-  Alert,
   SafeAreaView,
   Image,
 } from "react-native";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "../App";
-import { auth } from "../utils/authPersistence";
-import { saveRecipe, shareRecipe, isRecipeSaved, getUserRecipes } from "../utils/firestore";
-import { User } from "firebase/auth";
 import Background from "../components/background";
 import CustomBottomBar from "../components/customBottomBar";
 
@@ -26,78 +22,18 @@ interface Recipe {
   cookingTime: string;
   difficulty: string;
   servings: number;
+  estimatedKcal?: string;
+  id?: string;
 }
 
 const RecipeDetail = ({ navigation, route }: Props) => {
   const { recipe } = route.params;
-  const currentUser = auth.currentUser;
-  const [isSaved, setIsSaved] = useState(false);
-  const [isShared, setIsShared] = useState(false);
-
-  useEffect(() => {
-    const checkIfRecipeIsSaved = async () => {
-      if (currentUser) {
-        const saved = await isRecipeSaved(currentUser.uid, recipe);
-        setIsSaved(saved);
-      }
-    };
-    checkIfRecipeIsSaved();
-  }, [currentUser, recipe]);
-
-  const handleSaveRecipe = async () => {
-    if (!currentUser) {
-      Alert.alert("Error", "You must be logged in to save recipes.");
-      return;
-    }
-
-    try {
-      await saveRecipe(currentUser.uid, recipe);
-      setIsSaved(true);
-      Alert.alert("Success", "Recipe saved successfully!");
-    } catch (error: any) {
-      console.error("Error saving recipe:", error);
-      Alert.alert("Error", "Failed to save recipe. Please try again.");
-    }
-  };
-
-  const handleShareRecipe = async () => {
-    if (!currentUser) {
-      Alert.alert("Error", "You must be logged in to share recipes.");
-      return;
-    }
-
-    if (!isSaved) {
-      Alert.alert("Error", "You must save the recipe first before sharing.");
-      return;
-    }
-
-    try {
-      // For now, we'll need to get the recipe ID from the saved recipes
-      // This is a simplified approach - in a real app, you'd pass the recipe ID
-      const userRecipes = await getUserRecipes(currentUser.uid);
-      const savedRecipe = userRecipes.find(r =>
-        r.title === recipe.title &&
-        JSON.stringify(r.ingredients) === JSON.stringify(recipe.ingredients)
-      );
-
-      if (savedRecipe) {
-        await shareRecipe(currentUser.uid, savedRecipe.id);
-        setIsShared(true);
-        Alert.alert("Success", "Recipe shared successfully!");
-      } else {
-        Alert.alert("Error", "Could not find saved recipe to share.");
-      }
-    } catch (error: any) {
-      console.error("Error sharing recipe:", error);
-      Alert.alert("Error", "Failed to share recipe. Please try again.");
-    }
-  };
 
   return (
     <Background>
       <SafeAreaView style={{ flex: 1 }}>
         <ScrollView contentContainerStyle={styles.container}>
-          {/* Header: Back button and CULINA */}
+          {/* Header: Back button and CULINA title */}
           <View style={styles.headerContainer}>
             <TouchableOpacity onPress={() => navigation.goBack()}>
               <Image
@@ -117,6 +53,9 @@ const RecipeDetail = ({ navigation, route }: Props) => {
             <Text style={styles.metaText}>⏱️ {recipe.cookingTime}</Text>
             <Text style={styles.metaText}>🎯 {recipe.difficulty}</Text>
             <Text style={styles.metaText}>👥 Serves {recipe.servings}</Text>
+            {recipe.estimatedKcal && (
+              <Text style={styles.metaText}>🔥 {recipe.estimatedKcal}</Text>
+            )}
           </View>
 
           {/* Ingredients Section */}
@@ -154,25 +93,7 @@ const RecipeDetail = ({ navigation, route }: Props) => {
           })}
 
           {/* Action Buttons */}
-          {!isSaved ? (
-            <TouchableOpacity
-              style={[styles.button, styles.saveButton]}
-              onPress={handleSaveRecipe}
-            >
-              <Text style={styles.buttonText}>Save Recipe</Text>
-            </TouchableOpacity>
-          ) : (
-            <View style={styles.buttonContainer}>
-              <TouchableOpacity
-                style={[styles.button, styles.shareButton]}
-                onPress={handleShareRecipe}
-              >
-                <Text style={styles.buttonText}>
-                  {isShared ? "Shared ✓" : "Share Recipe"}
-                </Text>
-              </TouchableOpacity>
-            </View>
-          )}
+          {/* Removed save recipe button below the recipe screen as per user request */}
         </ScrollView>
 
         <CustomBottomBar />
@@ -189,6 +110,7 @@ const styles = StyleSheet.create({
   headerContainer: {
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: "space-between",
     marginBottom: 20,
   },
   backIcon: {
@@ -199,7 +121,10 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 24,
     fontWeight: "800",
+    flex: 1,
+    textAlign: "center",
   },
+
   recipeTitle: {
     fontSize: 24,
     fontWeight: "bold",
@@ -252,27 +177,7 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     flex: 1,
   },
-  button: {
-    alignItems: "center",
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 10,
-    marginTop: 20,
-  },
-  saveButton: {
-    backgroundColor: "#4CAF50",
-  },
-  shareButton: {
-    backgroundColor: "#2196F3",
-  },
-  buttonContainer: {
-    marginTop: 20,
-  },
-  buttonText: {
-    color: "#fff",
-    fontWeight: "600",
-    fontSize: 16,
-  },
+
 });
 
 export default RecipeDetail;

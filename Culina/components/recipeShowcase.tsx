@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, FlatList, StyleSheet, TouchableOpacity, Image } from 'react-native';
-import { getSharedRecipes } from '../utils/firestore';
+import { getSharedRecipes, SharedRecipe } from '../utils/firestore';
 
 interface Recipe {
   id: string;
@@ -12,12 +12,12 @@ interface Recipe {
 }
 
 interface RecipeShowcaseProps {
-  onRecipePress?: (recipe: Recipe) => void;
+  onRecipePress?: (recipe: any) => void;
 }
 
 const RecipeShowcase: React.FC<RecipeShowcaseProps> = ({ onRecipePress }) => {
   const [recentlyGenerated, setRecentlyGenerated] = useState<Recipe[]>([]);
-  const [communityShared, setCommunityShared] = useState<Recipe[]>([]);
+  const [communityShared, setCommunityShared] = useState<SharedRecipe[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -27,19 +27,8 @@ const RecipeShowcase: React.FC<RecipeShowcaseProps> = ({ onRecipePress }) => {
   const fetchRecipes = async () => {
     try {
       const sharedRecipes = await getSharedRecipes();
-
-      // Transform shared recipes to match the expected format
-      const communitySharedData = sharedRecipes.slice(0, 10).map(recipe => ({
-        id: recipe.id,
-        title: recipe.title,
-        image: "https://img.freepik.com/free-photo/side-view-double-cheeseburger-with-grilled-beef-patties-cheese-lettuce-leaf-burger-buns_141793-4883.jpg", // Default image
-        duration: recipe.cookingTime,
-        calories: 0,
-        ingredientsCount: recipe.ingredients.length,
-      }));
-
       setRecentlyGenerated([]);
-      setCommunityShared(communitySharedData);
+      setCommunityShared(sharedRecipes.slice(0, 10));
     } catch (error) {
       console.error('Error fetching recipes:', error);
       setRecentlyGenerated([]);
@@ -63,6 +52,25 @@ const RecipeShowcase: React.FC<RecipeShowcaseProps> = ({ onRecipePress }) => {
           <Text style={styles.metaText}>⏱️ {item.duration}</Text>
           <Text style={styles.metaText}>🔥 {item.calories} cal</Text>
           <Text style={styles.metaText}>🥕 {item.ingredientsCount} ingredients</Text>
+        </View>
+      </View>
+    </TouchableOpacity>
+  );
+
+  const renderSharedRecipeItem = ({ item }: { item: SharedRecipe }) => (
+    <TouchableOpacity
+      style={styles.recipeCard}
+      onPress={() => onRecipePress?.(item)}
+    >
+      <Image source={{ uri: "https://img.freepik.com/free-photo/side-view-double-cheeseburger-with-grilled-beef-patties-cheese-lettuce-leaf-burger-buns_141793-4883.jpg" }} style={styles.recipeImage} />
+      <View style={styles.recipeInfo}>
+        <Text style={styles.recipeTitle} numberOfLines={2}>
+          {item.title}
+        </Text>
+        <View style={styles.recipeMeta}>
+          <Text style={styles.metaText}>⏱️ {item.cookingTime}</Text>
+          <Text style={styles.metaText}>🔥 {item.estimatedKcal ? parseInt(item.estimatedKcal.replace(/\D/g, '')) || 0 : 0} cal</Text>
+          <Text style={styles.metaText}>🥕 {item.ingredients.length} ingredients</Text>
         </View>
       </View>
     </TouchableOpacity>
@@ -97,7 +105,7 @@ const RecipeShowcase: React.FC<RecipeShowcaseProps> = ({ onRecipePress }) => {
         {communityShared.length > 0 ? (
           <FlatList
             data={communityShared}
-            renderItem={renderRecipeItem}
+            renderItem={renderSharedRecipeItem}
             keyExtractor={(item) => item.id}
             horizontal
             showsHorizontalScrollIndicator={false}

@@ -9,6 +9,7 @@ export interface SavedRecipe {
   cookingTime: string;
   difficulty: string;
   servings: number;
+  estimatedKcal?: string;
   userId: string;
   savedAt: Date;
   shared?: boolean;
@@ -22,6 +23,7 @@ export interface SharedRecipe {
   cookingTime: string;
   difficulty: string;
   servings: number;
+  estimatedKcal?: string;
   sharedBy: string;
   sharedByUsername: string;
   sharedAt: Date;
@@ -264,6 +266,31 @@ export const saveRecipe = async (userId: string, recipe: Omit<SavedRecipe, 'id' 
   }
 };
 
+export const deleteSavedRecipe = async (userId: string, recipeId: string): Promise<void> => {
+  try {
+    const userRef = doc(db, 'users', userId);
+    const userSnap = await getDoc(userRef);
+
+    if (!userSnap.exists()) {
+      throw new Error('User document not found');
+    }
+
+    const userData = userSnap.data();
+    const existingRecipes = userData.recipes || [];
+
+    // Filter out the recipe to delete
+    const updatedRecipes = existingRecipes.filter((rec: SavedRecipe) => rec.id !== recipeId);
+
+    await updateDoc(userRef, {
+      recipes: updatedRecipes,
+      updatedAt: new Date(),
+    });
+  } catch (error) {
+    console.error('Error deleting saved recipe:', error);
+    throw error;
+  }
+};
+
 // Shared recipe functions
 export const shareRecipe = async (userId: string, recipeId: string): Promise<void> => {
   try {
@@ -287,6 +314,7 @@ export const shareRecipe = async (userId: string, recipeId: string): Promise<voi
       cookingTime: savedRecipe.cookingTime,
       difficulty: savedRecipe.difficulty,
       servings: savedRecipe.servings,
+      estimatedKcal: savedRecipe.estimatedKcal,
       sharedBy: userId,
       sharedByUsername: userData.username,
       sharedAt: new Date(),

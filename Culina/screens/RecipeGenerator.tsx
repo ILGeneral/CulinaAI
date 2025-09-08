@@ -31,6 +31,7 @@ interface Recipe {
   cookingTime: string;
   difficulty: string;
   servings: number;
+  estimatedKcal?: string;
 }
 
 const API_KEY = "AIzaSyA1OAG1LwmqHRIOwPaZNQr6lEuNWaM8XR8";
@@ -148,7 +149,8 @@ const RecipeGenerator = ({ navigation }: Props) => {
             ],
             "cookingTime": "XX minutes/hours and minutes",
             "difficulty": "Easy/Medium/Hard",
-            "servings": X
+            "servings": X,
+            "estimatedKcal": "X kcal"
           },
           ...
         ]
@@ -290,8 +292,11 @@ const RecipeGenerator = ({ navigation }: Props) => {
 
                     <View style={uiStyles.recipeMeta}>
                       <Text style={uiStyles.metaText}>⏱️ {recipe.cookingTime}</Text>
-                      <Text style={uiStyles.metaText}>🎯 {recipe.difficulty}</Text>
+                      <Text style={uiStyles.metaText}>🥕 {recipe.ingredients.length} ingredients</Text>
                       <Text style={uiStyles.metaText}>👥 Serves {recipe.servings}</Text>
+                      {recipe.estimatedKcal && (
+                        <Text style={uiStyles.metaText}>🔥 {recipe.estimatedKcal}</Text>
+                      )}
                     </View>
                   </TouchableOpacity>
                 ))}
