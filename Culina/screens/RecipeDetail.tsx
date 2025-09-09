@@ -14,7 +14,7 @@ import type { RootStackParamList } from "../App";
 import Background from "../components/background";
 import CustomBottomBar from "../components/customBottomBar";
 import { auth } from "../utils/authPersistence";
-import { saveRecipe, isRecipeSaved, shareRecipeDirectly } from "../utils/firestore";
+import { saveRecipe, isRecipeSaved, shareRecipeDirectly, deleteSavedRecipe } from "../utils/firestore";
 import { User } from "firebase/auth";
 
 type Props = NativeStackScreenProps<RootStackParamList, "RecipeDetail">;
@@ -40,7 +40,6 @@ const RecipeDetail = ({ navigation, route }: Props) => {
     const unsubscribe = auth.onAuthStateChanged(async (user) => {
       setCurrentUser(user);
       if (user) {
-        // Check if recipe is already saved
         const saved = await isRecipeSaved(user.uid, recipe);
         setIsSaved(saved);
       }
@@ -48,33 +47,36 @@ const RecipeDetail = ({ navigation, route }: Props) => {
     return unsubscribe;
   }, [recipe]);
 
-  const handleSaveRecipe = async () => {
+  // Toggle save / unsave
+  const handleToggleSave = async () => {
     if (!currentUser) {
       Alert.alert("Error", "You must be logged in to save recipes");
       return;
     }
 
-    if (isSaved) {
-      Alert.alert("Already Saved", "This recipe is already in your saved recipes");
-      return;
-    }
-
     setSaving(true);
+
     try {
-      await saveRecipe(currentUser.uid, {
-        title: recipe.title,
-        ingredients: recipe.ingredients,
-        instructions: recipe.instructions,
-        cookingTime: recipe.cookingTime,
-        difficulty: recipe.difficulty,
-        servings: recipe.servings,
-        estimatedKcal: recipe.estimatedKcal,
-      });
-      setIsSaved(true);
-      Alert.alert("Success", "Recipe saved successfully!");
+      if (isSaved) {
+        await deleteSavedRecipe(currentUser.uid, recipe.id || recipe.title);
+        setIsSaved(false);
+        Alert.alert("Removed", "Recipe has been removed from saved recipes");
+      } else {
+        await saveRecipe(currentUser.uid, {
+          title: recipe.title,
+          ingredients: recipe.ingredients,
+          instructions: recipe.instructions,
+          cookingTime: recipe.cookingTime,
+          difficulty: recipe.difficulty,
+          servings: recipe.servings,
+          estimatedKcal: recipe.estimatedKcal,
+        });
+        setIsSaved(true);
+        Alert.alert("Saved", "Recipe saved successfully!");
+      }
     } catch (error) {
-      console.error("Error saving recipe:", error);
-      Alert.alert("Error", "Failed to save recipe. Please try again.");
+      console.error("Error toggling recipe:", error);
+      Alert.alert("Error", "Failed to update saved recipe. Please try again.");
     } finally {
       setSaving(false);
     }
@@ -87,7 +89,6 @@ const RecipeDetail = ({ navigation, route }: Props) => {
     }
 
     try {
-      // Save the recipe to the shared recipes collection
       await shareRecipeDirectly(currentUser.uid, {
         title: recipe.title,
         ingredients: recipe.ingredients,
@@ -97,15 +98,12 @@ const RecipeDetail = ({ navigation, route }: Props) => {
         servings: recipe.servings,
         estimatedKcal: recipe.estimatedKcal,
       });
-
       Alert.alert("Success!", "Thanks for sharing!");
     } catch (error) {
       console.error("Error sharing recipe:", error);
       Alert.alert("Error", "Failed to share recipe. Please try again.");
     }
   };
-
-
 
   return (
     <Background>
@@ -126,29 +124,27 @@ const RecipeDetail = ({ navigation, route }: Props) => {
                 style={styles.shareButton}
                 onPress={handleShareRecipe}
               >
-                <Text style={styles.shareButtonText}>share</Text>
+                <Image
+                  source={require("../assets/share.png")}
+                  style={styles.shareIcon}
+                  resizeMode="contain"
+                />
               </TouchableOpacity>
               {currentUser && (
                 <TouchableOpacity
-                  style={[styles.saveButton, isSaved && styles.saveButtonSaved]}
-                  onPress={handleSaveRecipe}
-                  disabled={saving || isSaved}
+                  style={styles.saveButton}
+                  onPress={handleToggleSave}
+                  disabled={saving}
                 >
-                  {saving ? (
-                    <Text style={[styles.saveButtonText, isSaved && styles.saveButtonTextSaved]}>
-                      ...
-                    </Text>
-                  ) : isSaved ? (
-                    <Text style={[styles.saveButtonText, isSaved && styles.saveButtonTextSaved]}>
-                      ✓
-                    </Text>
-                  ) : (
-                    <Image
-                      source={require("../assets/heart.png")}
-                      style={styles.saveIcon}
-                      resizeMode="contain"
-                    />
-                  )}
+                  <Image
+                    source={
+                      isSaved
+                        ? require("../assets/Rsave.png")
+                        : require("../assets/save.png")
+                    }
+                    style={styles.saveIcon}
+                    resizeMode="contain"
+                  />
                 </TouchableOpacity>
               )}
             </View>
@@ -178,31 +174,21 @@ const RecipeDetail = ({ navigation, route }: Props) => {
           {/* Instructions Section */}
           <Text style={styles.sectionTitle}>Instructions</Text>
           {recipe.instructions.map((inst: string, index: number) => {
-            // Check if instruction already starts with "Step X:" format
             const isStepFormat = /^Step \d+:/i.test(inst.trim());
+            const instructionText = isStepFormat
+              ? inst.replace(/^Step \d+:\s*/i, '')
+              : inst;
 
-            if (isStepFormat) {
-              // Remove "Step X:" and display with our own numbering
-              const instructionText = inst.replace(/^Step \d+:\s*/i, '');
-              return (
-                <View key={index} style={styles.instructionStep}>
-                  <Text style={styles.stepNumber}>{index + 1}.</Text>
-                  <Text style={styles.instructionText}>{instructionText}</Text>
-                </View>
-              );
-            } else {
-              // Display as-is with our numbering
-              return (
-                <View key={index} style={styles.instructionStep}>
-                  <Text style={styles.stepNumber}>{index + 1}.</Text>
-                  <Text style={styles.instructionText}>{inst}</Text>
-                </View>
-              );
-            }
+            return (
+              <View key={index} style={styles.instructionStep}>
+                <Text style={styles.stepNumber}>{index + 1}.</Text>
+                <Text style={styles.instructionText}>{instructionText}</Text>
+              </View>
+            );
           })}
 
-          {/* Action Buttons */}
-          {/* Removed save recipe button below the recipe screen as per user request */}
+          {/* Spacer to scroll above bottom bar */}
+          <View style={{ height: 130 }} />
         </ScrollView>
 
         <CustomBottomBar />
@@ -223,8 +209,8 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   backIcon: {
-    width: 30,
-    height: 30,
+    width: 45,
+    height: 45,
     marginRight: 10,
   },
   headerTitle: {
@@ -233,7 +219,31 @@ const styles = StyleSheet.create({
     flex: 1,
     textAlign: "center",
   },
-
+  headerButtons: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  shareButton: {
+    width: 45,
+    height: 45,
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 10,
+  },
+  shareIcon: {
+    width: 45,
+    height: 45,
+  },
+  saveButton: {
+    width: 45,
+    height: 45,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  saveIcon: {
+    width: 45,
+    height: 45,
+  },
   recipeTitle: {
     fontSize: 24,
     fontWeight: "bold",
@@ -286,52 +296,6 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     flex: 1,
   },
-  saveButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: "#42A5F5",
-    justifyContent: "center",
-    alignItems: "center",
-    marginLeft: 10,
-  },
-  saveButtonSaved: {
-    backgroundColor: "#4CAF50",
-  },
-  saveButtonText: {
-    fontSize: 18,
-    color: "#fff",
-    fontWeight: "bold",
-  },
-  saveButtonTextSaved: {
-    color: "#fff",
-  },
-  saveIcon: {
-    width: 20,
-    height: 20,
-  },
-  headerButtons: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  shareButton: {
-    width: 60,
-    height: 40,
-    borderRadius: 8,
-    backgroundColor: "#42A5F5",
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 10,
-  },
-  shareIcon: {
-    width: 20,
-    height: 20,
-  },
-  shareButtonText: {
-    fontSize: 18,
-    color: "#fff",
-  },
-
 });
 
 export default RecipeDetail;

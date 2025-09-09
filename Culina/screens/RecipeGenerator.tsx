@@ -46,7 +46,6 @@ const RecipeGenerator = ({ navigation }: Props) => {
   const [loading, setLoading] = useState(true);
   const [generatedRecipes, setGeneratedRecipes] = useState<Recipe[]>([]);
 
-
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged((user) => {
       if (user) {
@@ -64,7 +63,6 @@ const RecipeGenerator = ({ navigation }: Props) => {
         const userIngredients = userData.ingredients || [];
         setIngredients(userIngredients.map((ing: any) => ing.name));
 
-        // Set user preferences
         setUserPreferences({
           dietaryLifestyle: userData.dietaryLifestyle || "",
           allergies: userData.allergies || [],
@@ -101,7 +99,6 @@ const RecipeGenerator = ({ navigation }: Props) => {
       const genAI = new GoogleGenerativeAI.GoogleGenerativeAI(API_KEY);
       const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
-      // Build preferences string
       let preferencesString = "";
       if (userPreferences.dietaryLifestyle && userPreferences.dietaryLifestyle !== "None") {
         preferencesString += `Dietary Lifestyle: ${userPreferences.dietaryLifestyle}. `;
@@ -132,7 +129,7 @@ const RecipeGenerator = ({ navigation }: Props) => {
         IMPORTANT: For the instructions array, provide each step as a separate string starting with "Step X:" where X is the step number.
         Each instruction should be a complete, detailed step that can stand alone.
         Do NOT include the step number in the instruction text itself - just start with "Step X:".
-        Add as many steps as needed, 5 is not the limit or the required minimum, just ensure clarity and completeness.
+        Add as many steps as needed.
 
         Please provide the recipes in the following JSON array format:
         [
@@ -141,16 +138,12 @@ const RecipeGenerator = ({ navigation }: Props) => {
             "ingredients": ["ingredient 1", "ingredient 2", ...],
             "instructions": [
               "Step 1: Preheat oven to 375°F (190°C)",
-              "Step 2: Mix all dry ingredients in a large bowl",
-              "Step 3: Add wet ingredients and stir until combined",
-              "Step 4: Pour batter into greased pan",
-              "Step 5: Bake for 25-30 minutes until golden brown"
+              "Step 2: Mix all dry ingredients in a large bowl"
             ],
-            "cookingTime": "XX minutes/hours and minutes",
+            "cookingTime": "XX minutes",
             "servings": X,
             "estimatedKcal": "X kcal"
-          },
-          ...
+          }
         ]
       `;
 
@@ -187,7 +180,7 @@ const RecipeGenerator = ({ navigation }: Props) => {
           style={{ flex: 1 }}
         >
           <ScrollView contentContainerStyle={uiStyles.container}>
-            {/* Header: CULINA and Profile aligned in a row */}
+            {/* Header */}
             <View style={uiStyles.headerContainer}>
               <Text style={uiStyles.headerTitle}>CULINA</Text>
               <TouchableOpacity onPress={() => navigation.navigate("Profile")}>
@@ -300,6 +293,9 @@ const RecipeGenerator = ({ navigation }: Props) => {
                 ))}
               </View>
             )}
+
+            {/* Spacer to push content above bottom bar */}
+            <View style={{ height: 130 }} />
           </ScrollView>
         </KeyboardAvoidingView>
 

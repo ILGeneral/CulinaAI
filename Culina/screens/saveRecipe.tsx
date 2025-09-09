@@ -21,8 +21,6 @@ import type { RootStackParamList } from "../App";
 
 type Props = NativeStackScreenProps<RootStackParamList, "SaveRecipe">;
 
-
-
 const SaveRecipe = ({ navigation }: Props) => {
   const [savedRecipes, setSavedRecipes] = useState<SavedRecipe[]>([]);
   const [loading, setLoading] = useState(true);
@@ -58,7 +56,6 @@ const SaveRecipe = ({ navigation }: Props) => {
 
     try {
       await deleteSavedRecipe(currentUser.uid, recipeId);
-      // Update local state by filtering out the deleted recipe
       setSavedRecipes(prev => prev.filter(recipe => recipe.id !== recipeId));
     } catch (error) {
       console.error("Error unsaving recipe:", error);
@@ -146,6 +143,7 @@ const SaveRecipe = ({ navigation }: Props) => {
                 </TouchableOpacity>
               </TouchableOpacity>
             )}
+            ListFooterComponent={<View style={{ height: 130 }} />}
           />
         </View>
         <CustomBottomBar />
@@ -157,7 +155,6 @@ const SaveRecipe = ({ navigation }: Props) => {
 const styles = StyleSheet.create({
   container: {
     padding: 16,
-    paddingBottom: 100,
     flex: 1,
   },
   headerContainer: {
@@ -165,7 +162,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     marginBottom: 16,
-    paddingTop: 8, 
+    paddingTop: 8,
   },
   title: {
     fontSize: 24,

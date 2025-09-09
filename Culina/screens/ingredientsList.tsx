@@ -225,6 +225,7 @@ const IngredientsList = ({ navigation }: Props) => {
                 </View>
               </View>
             )}
+            ListFooterComponent={<View style={{ height: 130 }} />} // <-- Spacer at bottom
           />
 
           {/* Modal for Add/Edit Ingredient */}
@@ -301,16 +302,6 @@ const IngredientsList = ({ navigation }: Props) => {
               </View>
             </View>
           </Modal>
-
-          {/* Read-only Ingredients Input */}
-          <TextInput
-            style={styles.readOnlyInput}
-            placeholder="e.g., chicken, rice, vegetables"
-            value={ingredients.map(ingredient => ingredient.name).join(", ")}
-            editable={false} // <-- Make it read-only
-            multiline
-            numberOfLines={2}
-          />
         </View>
         <CustomBottomBar />
       </SafeAreaView>
@@ -321,8 +312,7 @@ const IngredientsList = ({ navigation }: Props) => {
 const styles = StyleSheet.create({
   container: {
     padding: 16,
-    paddingBottom: 100,
-    flex: 1,
+    flex: 1, // Removed paddingBottom to avoid conflict with spacer
   },
   headerContainer: {
     flexDirection: "row",
@@ -443,16 +433,6 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 16,
     fontWeight: "600",
-  },
-  readOnlyInput: {
-    borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    marginTop: 12,
-    fontSize: 16,
-    backgroundColor: "#f9f9f9",
   },
 });
 

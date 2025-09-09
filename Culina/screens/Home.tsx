@@ -18,16 +18,19 @@ import { RootStackParamList } from "../App";
 import Background from "../components/background";
 import CustomBottomBar from "../components/customBottomBar";
 import RecipeShowcase from "../components/recipeShowcase";
-import ProfileScreen from './profile'
+import ProfileScreen from "./profile";
 import { auth } from "../utils/authPersistence";
-import { getUserRecipes, SavedRecipe, deleteSavedRecipe } from "../utils/firestore";
+import {
+  getUserRecipes,
+  SavedRecipe,
+  deleteSavedRecipe,
+} from "../utils/firestore";
 import { User } from "firebase/auth";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Home">;
 
 const Home = ({ navigation }: Props) => {
   const [savedRecipes, setSavedRecipes] = useState<SavedRecipe[]>([]);
-
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [loadingSaved, setLoadingSaved] = useState(false);
 
@@ -55,25 +58,26 @@ const Home = ({ navigation }: Props) => {
     }
   };
 
-  const handleUnsaveRecipe = async (recipeId: string, recipeTitle: string) => {
+  const handleUnsaveRecipe = async (
+    recipeId: string,
+    recipeTitle: string
+  ) => {
     if (!currentUser) return;
 
     Alert.alert(
       "Delete Saved Recipe",
       `Are you sure you want to delete "${recipeTitle}" from your saved recipes?`,
       [
-        {
-          text: "Cancel",
-          style: "cancel",
-        },
+        { text: "Cancel", style: "cancel" },
         {
           text: "Delete",
           style: "destructive",
           onPress: async () => {
             try {
               await deleteSavedRecipe(currentUser.uid, recipeId);
-              // Update local state by filtering out the deleted recipe
-              setSavedRecipes(prev => prev.filter(recipe => recipe.id !== recipeId));
+              setSavedRecipes((prev) =>
+                prev.filter((recipe) => recipe.id !== recipeId)
+              );
             } catch (error) {
               console.error("Error unsaving recipe:", error);
               Alert.alert("Error", "Failed to delete the recipe. Please try again.");
@@ -162,36 +166,41 @@ const Home = ({ navigation }: Props) => {
                           <Text style={styles.savedMetaText}>
                             🥕 {item.ingredients.length} ingredients
                           </Text>
-                  <Text style={styles.savedMetaText}>
-                    👥 Serves {item.servings}
-                  </Text>
-                  {item.estimatedKcal && (
-                    <Text style={styles.savedMetaText}>
-                      🔥 {item.estimatedKcal} kcal
-                    </Text>
-                  )}
-                </View>
+                          <Text style={styles.savedMetaText}>
+                            👥 Serves {item.servings}
+                          </Text>
+                          {item.estimatedKcal && (
+                            <Text style={styles.savedMetaText}>
+                              🔥 {item.estimatedKcal} kcal
+                            </Text>
+                          )}
+                        </View>
                       </TouchableOpacity>
                       <TouchableOpacity
                         style={styles.unsaveButton}
-                        onPress={() => handleUnsaveRecipe(item.id, item.title)}
+                        onPress={() =>
+                          handleUnsaveRecipe(item.id, item.title)
+                        }
                       >
                         <Text style={styles.unsaveButtonText}>✕</Text>
                       </TouchableOpacity>
                     </View>
                   </View>
                 )}
-        showsHorizontalScrollIndicator={false}
-      />
-    </View>
-  )}
-
-
+                showsHorizontalScrollIndicator={false}
+              />
+            </View>
+          )}
 
           {/* Recipe Showcase Component */}
           <RecipeShowcase
-            onRecipePress={(recipe) => navigation.navigate("RecipeDetail", { recipe })}
+            onRecipePress={(recipe) =>
+              navigation.navigate("RecipeDetail", { recipe })
+            }
           />
+
+          {/* Spacer to prevent overlap with bottom bar */}
+          <View style={{ height: 130 }} />
         </ScrollView>
 
         {/* Floating Bottom Bar */}
@@ -204,7 +213,7 @@ const Home = ({ navigation }: Props) => {
 const styles = StyleSheet.create({
   container: {
     padding: 16,
-    paddingBottom: 100,
+    // removed paddingBottom, replaced with spacer
   },
   header: {
     flexDirection: "row",
@@ -247,14 +256,22 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   icon: { width: 24, height: 24 },
-  section: { marginTop: 20 },
+  section: { 
+    marginBottom: 20,
+  },
   sectionHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 8,
+    marginBottom: 5,
   },
-  sectionTitle: { fontSize: 16, fontWeight: "700" },
+  sectionTitle: { 
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 12,
+    paddingHorizontal: 4,
+  },
   seeAll: { fontSize: 14, color: "#42A5F5", fontWeight: "600" },
   savedRecipeCardContainer: {
     flexDirection: "row",
@@ -305,15 +322,15 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     flexWrap: "wrap",
     justifyContent: "flex-start",
-    gap: 8,
   },
   savedMetaText: {
     fontSize: 12,
     color: "#666",
     fontWeight: "500",
     flexShrink: 1,
+    marginRight: 8,
+    marginBottom: 4,
   },
-
 });
 
 export default Home;

@@ -19,8 +19,8 @@ import { FontAwesome } from "@expo/vector-icons";
 import FlashMessage from "react-native-flash-message";
 import { useNavigation } from "@react-navigation/native";
 
-// Use your Background import
-import Background from "components/background";
+// Fixed import path for Background
+import Background from "../components/background";
 
 const GeminiChat = () => {
   type Message = { text: string; user: boolean; id: string };
@@ -216,8 +216,7 @@ const GeminiChat = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f5f5f5",
-    paddingBottom: 100,
+    paddingBottom: 30, 
   },
   keyboardAvoidingView: {
     flex: 1,
@@ -294,11 +293,11 @@ const styles = StyleSheet.create({
   inputContainer: {
     flexDirection: "row",
     alignItems: "center",
-    padding: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 8, 
     backgroundColor: "#fff",
     borderTopWidth: 1,
     borderTopColor: "#e0e0e0",
-    paddingBottom: 20,
   },
   input: {
     flex: 1,
